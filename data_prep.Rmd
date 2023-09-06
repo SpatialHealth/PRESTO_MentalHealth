@@ -1,0 +1,109 @@
+---
+title: "data_prep"
+author: "Cam Reimer"
+date: "2/4/2023"
+output: html_document
+---
+
+```{r load in data}
+#navigate to directory 
+setwd("C:/Users/camer/OneDrive/Documents/SPH/PRESTO")
+#load in packages 
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(labelled)
+library(tidyr)
+library (sas7bdat)
+library(haven)
+#load in functions
+source("~/R/PRESTO/data_prep_functions.R")
+#load in data
+data_full <- read_sas("ndvi_mental_001.sas7bdat")
+```
+
+```{r Data Wrangling, Add NDVI}
+years <- 2012:2019
+buffers <- c(50,100,250,500)
+
+#select important columns
+data = data_full[c("StudyID", "Country", "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", generate_all_ndvi_colnames(years,buffers))]
+rm(data_full)
+
+#get NDVI - This may take a while
+data <- add_ndvi(data, id_colname = "StudyID", date_colname = "b_finisheddate", buffers=buffers)
+
+#categorize ct_urban
+data <- add_urban_cat(data)
+```
+
+```{r Check for missingness sequentially}
+#confounding variables 
+miss1 <- subset(data, !is.na(data$StudyID) & !is.na(data$Country) & !is.na(data$ageatqstn) & !is.na(data$b_race_ethnic_census) & !is.na(data$b_educ) & !is.na(data$b_income) & !is.na(data$ct_HHinc) & !is.na(data$ct_lths) & !is.na(data$ct_urban)) 
+paste(dim(data)[1] - dim(miss1)[1], "participants missing data on confounding variables")
+
+#outcomes 
+miss2 <- subset(miss1, !is.na(miss1$pss_score) & !is.na(miss1$b_mdi_score))
+paste(dim(miss1)[1] - dim(miss2)[1], "participants missing data on outcome measures")
+
+#greenness 
+paste(dim(miss2)[1] - dim(na.omit(miss2[,grep("ndvi", names(data))]))[1], "participants missing greenness data")
+```
+
+```{r Check for missingness}
+#remove missing data 
+data_final = na.omit(data)
+
+#check counts of missing data 
+missing_counts <- colMeans(is.na(data)) * dim(data)[1]
+missing_counts <- append(missing_counts, dim(data)[1] - dim(na.omit(data[,c('pss_score', 'b_mdi_score')]))[1])
+missing_counts <- append(missing_counts, dim(data)[1] - dim(na.omit(data[,grep("ndvi", names(data))]))[1])
+missing_counts <- append(missing_counts, dim(data)[1] - dim(data_final)[1])
+miss <- as.matrix(missing_counts)
+colnames(miss) <- "count"
+rownames(miss)[c(dim(miss)[1]-1,dim(miss)[1])] <- c( "All NDVI", "Total")
+miss
+#rm(data)
+```
+
+```{r Get quantiles and assign factors}
+#Get IQR for analysis 
+data_final <- get_ndvi_iqr(data_final)
+#Create Quantiles of NDVI IQR
+data_final <- get_ndvi_iqr_quartiles(data_final)
+#Create Quantiles for NSES
+data_final <- data_final %>%
+  mutate(ct_HHinc_quantile = ntile(ct_HHinc, 3))
+
+#turn variables into factors 
+factor_vars <- c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat", names(data_final[grep("quantile", names(data_final))]))
+data_final[factor_vars] <- lapply(data_final[factor_vars], factor)
+```
+
+```{r Create subsets}
+urban = subset(data_final, ct_urban_cat == 1)
+rural = subset(data_final, ct_urban_cat == 0)
+
+#use census tract income as a proxy for Neighborhood Socioeconomic Status
+NSES1 = subset(data_final, ct_HHinc_quantile == 1)
+NSES2 = subset(data_final, ct_HHinc_quantile == 2)
+NSES3 = subset(data_final, ct_HHinc_quantile == 3)
+
+#combined stratification
+NSES1_urban = subset(data_final, ct_HHinc_quantile == 1 & ct_urban_cat ==1)
+NSES2_urban = subset(data_final, ct_HHinc_quantile == 2 & ct_urban_cat ==1)
+NSES3_urban = subset(data_final, ct_HHinc_quantile == 3 & ct_urban_cat ==1)
+NSES1_rural = subset(data_final, ct_HHinc_quantile == 1 & ct_urban_cat ==0)
+NSES2_rural = subset(data_final, ct_HHinc_quantile == 2 & ct_urban_cat ==0)
+NSES3_rural = subset(data_final, ct_HHinc_quantile == 3 & ct_urban_cat ==0)
+
+data <- data_final
+rm(data_final)
+```
+
+```{r Export data}
+save(data, urban, rural, NSES1, NSES2, NSES3, NSES1_urban, NSES2_urban, NSES3_urban, NSES1_rural, NSES2_rural, NSES3_rural, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
+#write_csv(data_final, "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.csv")
+```
+
+

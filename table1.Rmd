@@ -1,0 +1,69 @@
+---
+title: "table1"
+author: "Cam Reimer"
+date: "2023-02-14"
+output: html_document
+---
+
+```{r}
+#load in packages 
+library(tableone)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(labelled)
+#load in data
+load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
+```
+
+```{r}
+# Rename Factors
+data$race_ethnic_factors = as.factor(data$b_race_ethnic_census)
+levels(data$race_ethnic_factors) <- c("Hispanic/Latina/Latinx", "Mixed race, Non-hispanic", "Black, Non-Hispanic", "Asian/Pac Islander, Non-Hispanic", "American Indian/Alaskan Native, Non-Hispanic", "White, Non-Hispanic", "Other race, non-hispanic/missing race")
+data$income_factors = as.factor(data$b_income)
+levels(data$income_factors) <- c("<$15,000", "$15,000-$24,999", "$25,000-$49,999", "$50,000-$74,999", "$75,000-$99,999", "$100,000-$124.999", "$125,000-$149,999", "$150,000-$199,999", ">=$200,000")
+data$educ_factors = as.factor(data$b_educ)
+levels(data$educ_factors) <- c("Less than 12th grade", "High school degree/GED", "Some college/vocational school", "College degree (4 years)", "Graduate degree")
+
+# Rename Variable labels 
+var_label(data$ageatqstn) <- "Age"
+var_label(data$race_ethnic_factors) <- "Race/ethnicity categories-census"
+var_label(data$income_factors) <- "Income (household)"
+var_label(data$educ_factors) <- "Education"
+var_label(data$ct_HHinc) <- "Census tract - Income (household)"
+var_label(data$ct_lths) <- "Census tract - LTHS"
+var_label(data$ct_urban_cat) <- "Census tract - Urban"
+var_label(data$pss_score) <- "PSS"
+var_label(data$b_mdi_score) <- "MDI" 
+
+# Assign variables for table one 
+myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score")
+catVars <- c( "race_ethnic_factors", "educ_factors",  "income_factors", "ct_urban_cat")
+```
+
+
+#Table One, Full Sample ---------------------------------------------------------------------------
+
+```{r}
+buffer <- "100"
+ndvi_measure <- "amax"
+quantiles <- paste0("ndvi_", buffer, "_", ndvi_measure, "_iqr_quantile")
+
+#Stratified by greenness quartiles 
+tab1_100 <- CreateTableOne(vars = myVars, strata = quantiles, data = data, factorVars = catVars, test = FALSE)
+print(tab1_100, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual = TRUE)
+
+#full sample stats
+tab1_100_overall <- CreateTableOne(vars = myVars , data = data, factorVars = catVars, test = FALSE)
+print(tab1_100_overall, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual = TRUE)
+```
+
+```{r}
+#export 
+table1t <- print(tab1_100, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
+write.csv(table1t, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1.csv")
+
+table1t <- print(tab1_100_overall, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
+write.csv(table1t, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1_overall.csv")
+```
+

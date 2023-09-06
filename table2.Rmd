@@ -1,0 +1,67 @@
+---
+title: "table2"
+author: "Cam Reimer"
+date: "2/06/2023"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(labelled)
+library(tidyr)
+library(kableExtra)
+
+source("analysis_functions.R")
+load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
+```
+
+```{r}
+#Chose data (or subset of data) for this analysis 
+data <- data
+
+#set up model runs 
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths")
+models <- list(x[1:2], x[1:4], x[1:6]) #Model 1, 2, and 3
+buffers <- c(100)                      #pick one buffer radius for this analysis
+ndvi_measures <- c("amax", "smax", "smean")
+
+#PSS score 
+outcome <- "pss_score"
+pss <- data.frame(ncol = length(ndvi_measures), nrow = (length(models)))
+#loop through models 
+for(i in 1:length(models)){
+  #loop through ndvi measures 
+  for(j in 1:length(ndvi_measures)){
+    #save results to data frame 
+    pss[i,j] <- lmfull_processed(data=data, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(pss) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(pss) <- c("PSS - Model 1", "PSS - Model 2", "PSS - Model 3")
+
+#MDI score
+outcome <- "b_mdi_score"
+mdi <- data.frame(ncol = length(ndvi_measures), nrow = (length(models)))
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    mdi[i,j] <- lmfull_processed(data=data, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(mdi) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(mdi) <- c("MDI - Model 1", "MDI - Model 2", "MDI - Model 3")
+
+```
+
+```{r}
+full <- rbind(pss, mdi)
+
+#Create table
+kbl(full, caption = paste0(buffers[1],"m NDVI Buffer")) %>%
+  kable_paper("striped", full_width = F) %>%
+  pack_rows("PSS", 1, 3) %>%
+  pack_rows("MDI", 4, 6) 
+```
+
+
+
