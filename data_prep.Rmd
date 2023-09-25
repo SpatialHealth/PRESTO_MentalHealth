@@ -87,7 +87,7 @@ dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")] <- lapp
 ```
 
 ```{r Create subsets}
-########## GROUP WITH DPLYR ###############
+########## GROUP WITH DPLYR ##############
 
 urban = subset(data_final, ct_urban_cat == 1)
 rural = subset(data_final, ct_urban_cat == 0)
