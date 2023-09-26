@@ -27,7 +27,7 @@ years <- 2012:2019
 buffers <- c(50,100,250,500)
 
 #select important columns
-data = data_full[c("StudyID", "Country", "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", generate_all_ndvi_colnames(years,buffers))]
+data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", generate_all_ndvi_colnames(years,buffers))]
 rm(data_full)
 
 #get NDVI - This may take a while
