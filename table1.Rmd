@@ -5,7 +5,7 @@ date: "2023-02-14"
 output: html_document
 ---
 
-```{r}
+```{r, INIT}
 #load in packages 
 library(tableone)
 library(tidyverse)
@@ -17,10 +17,9 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/dropped.RData")
 ```
 
-```{r}
-########## UPDATE DROPPED ###### USE QUANTILES
+#Table One, Full Sample ---------------------------------------------------------------------------
 
-
+```{r, PREP}
 # Rename Factors
 data$race_ethnic_factors = as.factor(data$b_race_ethnic_census)
 levels(data$race_ethnic_factors) <- c("Hispanic/Latina/Latinx", "Mixed race, Non-hispanic", "Black, Non-Hispanic", "Asian/Pac Islander, Non-Hispanic", "American Indian/Alaskan Native, Non-Hispanic", "White, Non-Hispanic", "Other race, non-hispanic/missing race")
@@ -45,60 +44,66 @@ myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors"
 catVars <- c( "race_ethnic_factors", "educ_factors",  "income_factors", "ct_urban_cat")
 ```
 
-
-#Table One, Full Sample ---------------------------------------------------------------------------
-
-```{r}
+```{r, GET TABLES}
+# Specify Quartiles
 buffer <- "100"
 ndvi_measure <- "amax"
-#quantiles <- paste0("ndvi_", buffer, "_", ndvi_measure, "_iqr_quantile")
 quantiles <- paste0("ndvi_", buffer, "_", ndvi_measure, "_quantile")
 
-#Stratified by greenness quartiles 
+# Stratified by greenness quartiles 
 tab1_100 <- CreateTableOne(vars = myVars, strata = quantiles, data = data, factorVars = catVars, test = FALSE)
 print(tab1_100, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual = TRUE)
 
-#full sample stats
+# full sample stats
 tab1_100_overall <- CreateTableOne(vars = myVars , data = data, factorVars = catVars, test = FALSE)
 print(tab1_100_overall, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual = TRUE)
 ```
 
+#Dropped Participants ---------------------------------------------------------------------------
+
+```{r, PREP-dropt}
+# Rename Factors
+dropped$race_ethnic_factors = as.factor(dropped$b_race_ethnic_census)
+levels(dropped$race_ethnic_factors) <- c("Hispanic/Latina/Latinx", "Mixed race, Non-hispanic", "Black, Non-Hispanic", "Asian/Pac Islander, Non-Hispanic", "American Indian/Alaskan Native, Non-Hispanic", "White, Non-Hispanic", "Other race, non-hispanic/missing race")
+dropped$income_factors = as.factor(dropped$b_income)
+levels(dropped$income_factors) <- c("<$15,000", "$15,000-$24,999", "$25,000-$49,999", "$50,000-$74,999", "$75,000-$99,999", "$100,000-$124.999", "$125,000-$149,999", "$150,000-$199,999", ">=$200,000")
+dropped$educ_factors = as.factor(dropped$b_educ)
+levels(dropped$educ_factors) <- c("Less than 12th grade", "High school degree/GED", "Some college/vocational school", "College degree (4 years)", "Graduate degree")
+
+# Rename Variable labels 
+var_label(dropped$ageatqstn) <- "Age"
+var_label(dropped$race_ethnic_factors) <- "Race/ethnicity categories-census"
+var_label(dropped$income_factors) <- "Income (household)"
+var_label(dropped$educ_factors) <- "Education"
+var_label(dropped$ct_HHinc) <- "Census tract - Income (household)"
+var_label(dropped$ct_lths) <- "Census tract - LTHS"
+var_label(dropped$ct_urban_cat) <- "Census tract - Urban"
+var_label(dropped$pss_score) <- "PSS"
+var_label(dropped$b_mdi_score) <- "MDI" 
+
+# Assign variables for table one 
+myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score")
+catVars <- c( "race_ethnic_factors", "educ_factors",  "income_factors", "ct_urban_cat")
+```
+
+```{r, GET TABLE}
+# full sample stats
+dropt <- CreateTableOne(vars = myVars , data = dropped, factorVars = catVars, test = FALSE)
+print(dropt, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual = TRUE)
+```
+
+
+#Export Tables ----------------------------------------------------------------------------------
+
 ```{r}
 #export 
-table1t <- print(tab1_100, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
-write.csv(table1t, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1.csv")
+table1 <- print(tab1_100, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
+write.csv(table1, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1.csv")
 
-table1t <- print(tab1_100_overall, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
-write.csv(table1t, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1_overall.csv")
+table1_ovr <- print(tab1_100_overall, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
+write.csv(table1_ovr, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1_overall.csv")
 
-dropt <- print(tab1_100_overall, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
+dropt <- print(dropt, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
 write.csv(dropt, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1_dropped.csv")
 ```
 
-```{r}
-### MOVE THIS somewhere else 
-tmp <- names(data)[grep("ndvi", names(data))]
-tmp2 <- tmp[grep("iqr", tmp, invert = TRUE)]
-tmp3 <- tmp2[grep("quantile", tmp2, invert = TRUE)]
-n <- data[tmp3]
-n <- n[,order(names(n))]
-#round(cor(n, method = "spearman"), 2)
-
-n50 <- n[grep("_50_", names(n))]
-n100 <- n[grep("_100_", names(n))]
-n250 <- n[grep("_250_", names(n))]
-n500 <- n[grep("_500_", names(n))]
-
-round(cor(n50, method = "spearman"), 2)
-round(cor(n100, method = "spearman"), 2)
-round(cor(n250, method = "spearman"), 2)
-round(cor(n500, method = "spearman"), 2)
-
-namax <- n[grep("amax", names(n))]
-nsmax <- n[grep("smax", names(n))]
-nsmean <- n[grep("smean", names(n))]
-
-round(cor(namax, method = "spearman"), 2)
-round(cor(nsmax, method = "spearman"), 2)
-round(cor(nsmean, method = "spearman"), 2)
-```
