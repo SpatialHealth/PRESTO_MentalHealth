@@ -14,6 +14,7 @@ library(corrplot)
 library(RColorBrewer)
 #load in data
 load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
+load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/dropped.RData")
 ```
 
 ```{r, DEMOGRAPHIC}
@@ -28,6 +29,14 @@ length(CAD)
 USA <- all[!(all %in% provinces)]
 USA #All states + DC, except for AK and HI
 length(USA)
+
+
+### Income 
+#% of participants with income >$50,000
+(sum(as.numeric(data$b_income) >= 4) / nrow(data)) * 100
+
+#% w/ income >$50,000 for dropped participants
+(sum(as.numeric(dropped$b_income) >= 4, na.rm = TRUE) / length(na.omit(dropped$b_income))) * 100
 ```
 
 ```{r, NDVI CORRELATIONS}
@@ -42,7 +51,7 @@ cnames <- paste0( c(rep('Amax', 4), rep('Smax', 4), rep('Smean', 4)), ' ', rep(c
 colnames(n) <- cnames
 colnames(iqr) <- cnames
 
-dat <- n
+dat <- iqr
 m <- round(cor(dat, method = "spearman"), 2)
 m <- round(cor(dat, method = "pearson"), 2)
 
@@ -67,6 +76,10 @@ p.mat <- cor.mtest(m)
 #col <- colorRampPalette(c("#BB4444", '#ee1b1b', '#f68d8d', "#FFFFFF", "#166628"))
 col <- colorRampPalette(c('#850a0a', '#c90f0f', '#f03232', '#fabbbb', '#ffffff',  "#166628"))
 
+```
+
+```{r, export correlation plot }
+png("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/corrplot.png")
 corrplot(m, method="color", 
          #col=brewer.pal(n=11, name="PiYG"), 
          col = col(200),
@@ -75,16 +88,62 @@ corrplot(m, method="color",
          addCoef.col = "black", # Add coefficient of correlation
          tl.col="black", tl.srt=45, #Text label color and rotation
          # Combine with significance
-         p.mat = p.mat, sig.level = 0.01, insig = 'blank', 
+         p.mat = p.mat, sig.level = 0.1, insig = 'blank', 
          # hide correlation coefficient on the principal diagonal
          diag=FALSE 
          )
+dev.off()
 
 ```
 
 ```{r}
 # Estimates and CI for select models 
+source("analysis_functions.R")
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths")
 
+# Full sample - PSS model 1 
+ma <- lmfull_processed(data = data, y = 'pss_score', buffers = 100, x = x[1:2], ndvi_measure = 'amax', sig_figs = 2)
+ma
 
+mb <- lmfull_processed(data = data, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2)
+mb
 
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income",  "ct_lths") 
+
+# NSES1 - urban
+m1 <- lmfull_processed(data = NSES1_urban, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m1
+
+# NSES2 - urban 
+m2 <- lmfull_processed(data = NSES2_urban, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m2
+
+# NSES3 - rural
+m3 <- lmfull_processed(data = NSES3_rural, y = 'pss_score', buffers = 500, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m3
+
+```
+
+```{r}
+### REPEAT w/ MDI 
+# Full sample - model 1 
+ma <- lmfull_processed(data = data, y = 'b_mdi_score', buffers = 100, x = x[1:2], ndvi_measure = 'amax', sig_figs = 2)
+ma
+
+mb <- lmfull_processed(data = data, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2)
+mb
+
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income",  "ct_lths") 
+
+# NSES1 - urban
+m1 <- lmfull_processed(data = NSES1_urban, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m1
+
+# NSES2 - urban 
+m2 <- lmfull_processed(data = NSES2_urban, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m2
+
+# NSES3 - rural
+m3 <- lmfull_processed(data = NSES3_rural, y = 'b_mdi_score', buffers = 500, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m3
 ```
