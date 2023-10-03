@@ -56,9 +56,9 @@ miss3 <- miss2 %>% dplyr::filter(complete.cases(select(., all_of(confounding))))
 con <- nrow(miss2) - nrow(miss3)
 
 # final counts
-cat(ex, "participants missing data on confounding variables", '\n')
+cat(ex, "participants missing greenness data", '\n')
 cat(out, "participants missing data on outcome measures", '\n')
-cat(con, "participants missing greenness data", '\n\n')
+cat(con, "participants missing data for confounders", '\n\n')
 
 ### Drop NAs
 data_final = na.omit(data)
