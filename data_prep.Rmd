@@ -95,6 +95,8 @@ dropped <- subset(data, !(data$StudyID %in% data_final$StudyID))
 if((nrow(data)-nrow(ct)) != nrow(dropped)){
   paste0("ERROR: Some missing data is unaccounted for!")
 }
+
+rm(ex, out, pss, mdi, con, age, race, educ, income, ct)
 ```
 
 ```{r Get quantiles and assign factors}
