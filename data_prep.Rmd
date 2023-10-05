@@ -27,7 +27,7 @@ years <- 2012:2019
 buffers <- c(50,100,250,500)
 
 #select important columns
-data = data_full[c("StudyID", "Country", "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", generate_all_ndvi_colnames(years,buffers))]
+data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", generate_all_ndvi_colnames(years,buffers))]
 rm(data_full)
 
 #get NDVI - This may take a while
@@ -38,41 +38,55 @@ data <- add_urban_cat(data)
 ```
 
 ```{r Check for missingness sequentially}
-#confounding variables 
-miss1 <- subset(data, !is.na(data$StudyID) & !is.na(data$Country) & !is.na(data$ageatqstn) & !is.na(data$b_race_ethnic_census) & !is.na(data$b_educ) & !is.na(data$b_income) & !is.na(data$ct_HHinc) & !is.na(data$ct_lths) & !is.na(data$ct_urban)) 
-paste(dim(data)[1] - dim(miss1)[1], "participants missing data on confounding variables")
+# specify columns
+confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban")
+outcomes <- c("pss_score", "b_mdi_score")
+exposures <- names(data)[grep("ndvi", names(data))]
 
-#outcomes 
-miss2 <- subset(miss1, !is.na(miss1$pss_score) & !is.na(miss1$b_mdi_score))
-paste(dim(miss1)[1] - dim(miss2)[1], "participants missing data on outcome measures")
+# 1. Exposures 
+miss1 <- data %>% dplyr::filter(complete.cases(select(., all_of(exposures))))
+ex <- nrow(data) - nrow(miss1)
 
-#greenness 
-paste(dim(miss2)[1] - dim(na.omit(miss2[,grep("ndvi", names(data))]))[1], "participants missing greenness data")
-```
+# 2. Outcomes 
+miss2 <- miss1 %>% dplyr::filter(complete.cases(select(., all_of(outcomes))))
+out <- nrow(miss1) - nrow(miss2)
 
-```{r Check for missingness}
-#remove missing data 
+pss <- miss1 %>% dplyr::filter(complete.cases(select(., all_of("pss_score"))))
+pss_missing <- nrow(miss1) - nrow(pss)
+mdi_missing <- out - pss_missing
+
+# 3. Confounding 
+miss3 <- miss2 %>% dplyr::filter(complete.cases(select(., all_of(confounding))))
+con <- nrow(miss2) - nrow(miss3)
+
+#age <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("ageatqstn")))) # missing 0 
+#race_ethnicity <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("b_race_ethnic_census")))) # missing 0 
+#educ <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("b_educ")))) # missing 0 
+income <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("b_income")))) # missing 355
+income_missing <- nrow(miss2) - nrow(income)
+
+ct <- income %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban", "ct_lths", "ct_HHinc"))))) # missing 58
+ct_missing <- con - income_missing
+
+# final counts
+cat(ex, "participants missing greenness data", '\n')
+cat(out, "participants missing data on outcome measures", '\n')
+cat(con, "participants missing data for confounders", '\n\n')
+
+### Drop NAs
 data_final = na.omit(data)
 dropped <- subset(data, !(data$StudyID %in% data_final$StudyID))
 
-#check counts of missing data 
-missing_counts <- colMeans(is.na(data)) * dim(data)[1]
-missing_counts <- append(missing_counts, dim(data)[1] - dim(na.omit(data[,c('pss_score', 'b_mdi_score')]))[1])
-missing_counts <- append(missing_counts, dim(data)[1] - dim(na.omit(data[,grep("ndvi", names(data))]))[1])
-missing_counts <- append(missing_counts, dim(data)[1] - dim(data_final)[1])
-miss <- as.matrix(missing_counts)
-colnames(miss) <- "count"
-rownames(miss)[c(dim(miss)[1]-1,dim(miss)[1])] <- c( "All NDVI", "Total")
-#miss
-#rm(data)
+# check
+if((ex + out + con) == nrow(dropped)){
+  cat("All missingness accounted for!")
+  #rm(data)
+}
+
 ```
 
 ```{r Get quantiles and assign factors}
-#Get IQR for analysis 
-#data_final <- get_ndvi_iqr(data_final)
-#Create Quantiles of NDVI IQR
-#data_final <- get_ndvi_iqr_quartiles(data_final)
-
+# GET NDVI IQR and Quartiles for raw NDVI and NDVI IQR
 data_final <- process_ndvi(data_final, outpath = 'C:/Users/camer/OneDrive/Documents/SPH/PRESTO/breaks.csv')
 
 #Create Quantiles for NSES
