@@ -51,9 +51,22 @@ ex <- nrow(data) - nrow(miss1)
 miss2 <- miss1 %>% dplyr::filter(complete.cases(select(., all_of(outcomes))))
 out <- nrow(miss1) - nrow(miss2)
 
+pss <- miss1 %>% dplyr::filter(complete.cases(select(., all_of("pss_score"))))
+pss_missing <- nrow(miss1) - nrow(pss)
+mdi_missing <- out - pss_missing
+
 # 3. Confounding 
 miss3 <- miss2 %>% dplyr::filter(complete.cases(select(., all_of(confounding))))
 con <- nrow(miss2) - nrow(miss3)
+
+#age <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("ageatqstn")))) # missing 0 
+#race_ethnicity <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("b_race_ethnic_census")))) # missing 0 
+#educ <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("b_educ")))) # missing 0 
+income <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("b_income")))) # missing 355
+income_missing <- nrow(miss2) - nrow(income)
+
+ct <- income %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban", "ct_lths", "ct_HHinc"))))) # missing 58
+ct_missing <- con - income_missing
 
 # final counts
 cat(ex, "participants missing greenness data", '\n')
