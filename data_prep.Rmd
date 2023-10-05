@@ -1,14 +1,15 @@
 ---
 title: "data_prep"
 author: "Cam Reimer"
-date: "2/4/2023"
+date created: "2/4/2023"
+last updated: "10/5/2023"
 output: html_document
 ---
 
 ```{r load in data}
-#navigate to directory 
+# navigate to directory 
 setwd("C:/Users/camer/OneDrive/Documents/SPH/PRESTO")
-#load in packages 
+# load in packages 
 library(tidyverse)
 library(lubridate)
 library(dplyr)
@@ -16,9 +17,10 @@ library(labelled)
 library(tidyr)
 library (sas7bdat)
 library(haven)
-#load in functions
+library(kableExtra)
+# load in functions
 source("~/R/PRESTO/data_prep_functions.R")
-#load in data
+# load in data
 data_full <- read_sas("ndvi_mental_001.sas7bdat")
 ```
 
@@ -26,92 +28,102 @@ data_full <- read_sas("ndvi_mental_001.sas7bdat")
 years <- 2012:2019
 buffers <- c(50,100,250,500)
 
-#select important columns
+# select important columns
 data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", generate_all_ndvi_colnames(years,buffers))]
 rm(data_full)
 
-#get NDVI - This may take a while
+# get NDVI - This may take a while
 data <- add_ndvi(data, id_colname = "StudyID", date_colname = "b_finisheddate", buffers=buffers)
 
-#categorize ct_urban
+# categorize ct_urban
 data <- add_urban_cat(data)
 ```
 
-```{r Check for missingness sequentially}
+```{r, Check for Missingness Sequentially}
 # specify columns
 confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban")
 outcomes <- c("pss_score", "b_mdi_score")
 exposures <- names(data)[grep("ndvi", names(data))]
 
+# Initialize missing data table
+missing <- data.frame(rep(NA, 10))
+colnames(missing) <- '# of Participants w/ Missing Data'
+rownames(missing) <- c('All Exposures',
+                       'All Outcomes', 'PSS','MDI Score',  
+                       'All Confounders', 'Age', 'Race/Ethnicity', 'Education', 'Income', 'Census-tract Measures')
+
 # 1. Exposures 
-miss1 <- data %>% dplyr::filter(complete.cases(select(., all_of(exposures))))
-ex <- nrow(data) - nrow(miss1)
+ex <- data %>% dplyr::filter(complete.cases(select(., all_of(exposures))))
+missing[1,] <- nrow(data) - nrow(ex)
 
 # 2. Outcomes 
-miss2 <- miss1 %>% dplyr::filter(complete.cases(select(., all_of(outcomes))))
-out <- nrow(miss1) - nrow(miss2)
+out <- ex %>% dplyr::filter(complete.cases(select(., all_of(outcomes))))
+pss <- ex %>% dplyr::filter(complete.cases(select(., "pss_score")))
+mdi <- pss %>% dplyr::filter(complete.cases(select(., "b_mdi_score")))
 
-pss <- miss1 %>% dplyr::filter(complete.cases(select(., all_of("pss_score"))))
-pss_missing <- nrow(miss1) - nrow(pss)
-mdi_missing <- out - pss_missing
+missing[2,] <- nrow(ex) - nrow(out)
+missing[3,] <- nrow(ex) - nrow(pss)
+missing[4,] <- nrow(pss) - nrow(mdi)
 
-# 3. Confounding 
-miss3 <- miss2 %>% dplyr::filter(complete.cases(select(., all_of(confounding))))
-con <- nrow(miss2) - nrow(miss3)
+# 3. Confounders 
+con <- out %>% dplyr::filter(complete.cases(select(., all_of(confounding))))
+age <- out %>% dplyr::filter(complete.cases(select(., "ageatqstn")))
+race <- age %>% dplyr::filter(complete.cases(select(., "b_race_ethnic_census")))
+educ <- race %>% dplyr::filter(complete.cases(select(., "b_educ")))
+income <- educ %>% dplyr::filter(complete.cases(select(., "b_income")))
+ct <- income %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban", "ct_lths", "ct_HHinc")))))
 
-#age <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("ageatqstn")))) # missing 0 
-#race_ethnicity <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("b_race_ethnic_census")))) # missing 0 
-#educ <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("b_educ")))) # missing 0 
-income <- miss2 %>% dplyr::filter(complete.cases(select(., all_of("b_income")))) # missing 355
-income_missing <- nrow(miss2) - nrow(income)
+missing[5,] <- nrow(out) - nrow(con)
+missing[6,] <- nrow(out) - nrow(age)
+missing[7,] <- nrow(age) - nrow(race)
+missing[8,] <- nrow(race) - nrow(educ)
+missing[9,] <- nrow(educ) - nrow(income)
+missing[10,] <- nrow(income) - nrow(ct)
 
-ct <- income %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban", "ct_lths", "ct_HHinc"))))) # missing 58
-ct_missing <- con - income_missing
-
-# final counts
-cat(ex, "participants missing greenness data", '\n')
-cat(out, "participants missing data on outcome measures", '\n')
-cat(con, "participants missing data for confounders", '\n\n')
+# 4. Create table
+kbl(missing, caption = '') %>%
+  kable_paper("striped", full_width = F) %>%
+  pack_rows("Exposures", 1, 1) %>%
+  pack_rows("Outcomes", 2, 4) %>%
+  pack_rows("Confounders", 5, 10)
 
 ### Drop NAs
 data_final = na.omit(data)
 dropped <- subset(data, !(data$StudyID %in% data_final$StudyID))
 
-# check
-if((ex + out + con) == nrow(dropped)){
-  cat("All missingness accounted for!")
-  #rm(data)
+# checks 
+if((nrow(data)-nrow(ct)) != nrow(dropped)){
+  paste0("ERROR: Some missing data is unaccounted for!")
 }
-
 ```
 
 ```{r Get quantiles and assign factors}
 # GET NDVI IQR and Quartiles for raw NDVI and NDVI IQR
 data_final <- process_ndvi(data_final, outpath = 'C:/Users/camer/OneDrive/Documents/SPH/PRESTO/breaks.csv')
 
-#Create Quantiles for NSES
+# Create Quantiles for NSES
 data_final <- data_final %>%
   mutate(ct_HHinc_quantile = ntile(ct_HHinc, 3))
 
-#turn variables into factors 
+# turn variables into factors 
 factor_vars <- c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat", names(data_final[grep("quantile", names(data_final))]))
+
 data_final[factor_vars] <- lapply(data_final[factor_vars], factor)
 
 dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")] <- lapply(dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")], factor)
 ```
 
 ```{r Create subsets}
-########## GROUP WITH DPLYR ##############
-
+# by urbanicity 
 urban = subset(data_final, ct_urban_cat == 1)
 rural = subset(data_final, ct_urban_cat == 0)
 
-#use census tract income as a proxy for Neighborhood Socioeconomic Status
+# use census tract income as a proxy for Neighborhood Socioeconomic Status
 NSES1 = subset(data_final, ct_HHinc_quantile == 1)
 NSES2 = subset(data_final, ct_HHinc_quantile == 2)
 NSES3 = subset(data_final, ct_HHinc_quantile == 3)
 
-#combined stratification
+# combined stratification
 NSES1_urban = subset(data_final, ct_HHinc_quantile == 1 & ct_urban_cat ==1)
 NSES2_urban = subset(data_final, ct_HHinc_quantile == 2 & ct_urban_cat ==1)
 NSES3_urban = subset(data_final, ct_HHinc_quantile == 3 & ct_urban_cat ==1)
@@ -120,14 +132,12 @@ NSES2_rural = subset(data_final, ct_HHinc_quantile == 2 & ct_urban_cat ==0)
 NSES3_rural = subset(data_final, ct_HHinc_quantile == 3 & ct_urban_cat ==0)
 
 data <- data_final
-#rm(data_final)
 ```
 
 ```{r Export data}
 save(data, urban, rural, NSES1, NSES2, NSES3, NSES1_urban, NSES2_urban, NSES3_urban, NSES1_rural, NSES2_rural, NSES3_rural, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 
 save(dropped, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/dropped.RData")
-#write_csv(data_final, "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.csv")
 ```
 
 
