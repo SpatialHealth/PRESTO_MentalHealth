@@ -23,7 +23,7 @@ x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_lths") #Mo
 buffers <- c(50, 100, 250, 500)
 datasets <- list(NSES1, NSES2, NSES3, NSES1_urban, NSES2_urban,NSES3_urban, NSES1_rural, NSES2_rural, NSES3_rural)
 ndvi_measure <- "amax" #CHANGE TO "smax" or "smean" to explore other NDVI measures
-outcome = "pss_score" #CHANGE OUTCOME to "b_mdi_score" to recreate figure 1b
+outcome = "b_mdi_score" #CHANGE OUTCOME to "b_mdi_score" to recreate figure 1b
 
 figure1 <- as.data.frame(matrix(nrow=1, ncol=3))
 colnames(figure1) <- c("Mean", "Lower_CI", "Upper_CI")
@@ -53,6 +53,8 @@ figure1$quantile <- factor(figure1$quantile, levels = c("Low NSES", "Medium NSES
 ```{r}
 pd = position_dodge(.6)    ### How much to jitter the points on the plot
 
+png("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/figure1.png")
+
 ggplot(data=figure1, aes(x = buffer, y = Mean, color=quantile))+
   geom_line(aes(linetype = quantile), linewidth=0.5, position = pd)+
   geom_point(aes(colour = factor(quantile)), size=2.5, position = pd)+
@@ -72,5 +74,5 @@ ggplot(data=figure1, aes(x = buffer, y = Mean, color=quantile))+
   guides(col=guide_legend(ncol=2))+
   theme(legend.position="bottom", legend.key.width=unit(1,"in"),legend.title = element_blank(),legend.text = element_text(colour="black", size = 11))  
   
-
+dev.off()
 ```
