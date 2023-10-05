@@ -29,6 +29,7 @@ ndvi_measures <- c("amax", "smax", "smean")
 #PSS score 
 outcome <- "pss_score"
 pss <- data.frame(ncol = length(ndvi_measures), nrow = (length(models)))
+pss <- data.frame()
 #loop through models 
 for(i in 1:length(models)){
   #loop through ndvi measures 
