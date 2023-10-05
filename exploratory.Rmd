@@ -51,7 +51,7 @@ cnames <- paste0( c(rep('Amax', 4), rep('Smax', 4), rep('Smean', 4)), ' ', rep(c
 colnames(n) <- cnames
 colnames(iqr) <- cnames
 
-dat <- iqr
+dat <- n
 m <- round(cor(dat, method = "spearman"), 2)
 m <- round(cor(dat, method = "pearson"), 2)
 
