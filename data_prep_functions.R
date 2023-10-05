@@ -1,7 +1,7 @@
 library(dplyr)
 library(lubridate)
 
-#Generates colnames of NDVI measures 
+### Generates column names of NDVI measures 
 generate_ndvi_colnames <- function(time_measure = "seasonal", stat = "max", years = 2012:2019, buffers = c(50,100,250,500)){
   output <- NA
   if(time_measure == "annual" & stat == "max"){
@@ -24,7 +24,8 @@ generate_ndvi_colnames <- function(time_measure = "seasonal", stat = "max", year
   return(output[-1])
 }
 
-#Shortcut for generating ALL ndvi colnames
+
+### Shortcut for generating ALL NDVI colnames
 generate_all_ndvi_colnames <- function(years = 2012:2019, buffers = c(50,100,250,500)){
   output = generate_ndvi_colnames("annual", stat = "max", years, buffers)
   output = append(output, generate_ndvi_colnames("seasonal", stat = "max", years, buffers))
@@ -32,26 +33,27 @@ generate_all_ndvi_colnames <- function(years = 2012:2019, buffers = c(50,100,250
   return(output)
 }
 
-#Annual NDVI assignment function 
+
+### Annual NDVI assignment function 
 annual_ndvi <- function(vector, id_colname = "StudyID", date_colname = "b_finisheddate", buffers = c(50,100,250,500)){
-  #initialize output
+  # initialize output
   output <- vector[id_colname]
   
-  #index using a standard format "max_[buffer]m_[year]"
+  # index using a standard format "max_[buffer]m_[year]"
   ndvi_string <- paste0("max_", as.character(buffers), "m_", year(as.Date(vector[date_colname])))
   output <- append(output, vector[ndvi_string])
   
   return(as.numeric(output))
 }
 
-#Seasonal NDVI assignment function 
+### Seasonal NDVI assignment function 
 seasonal_ndvi <- function(vector, stat="max", id_colname = "StudyID", date_colname = "b_finisheddate", buffers = c(50,100,250,500)){
-  #initialize output
+  # initialize output
   output <- vector[id_colname]
   mon <- month(vector[date_colname])
   seasons <- c("winter", "spring", "summer", "fall")
   
-  #sort by seasons, index using a standard format "max_[season]_[buffer]m_[year]"
+  # sort by seasons, index using a standard format "max_[season]_[buffer]m_[year]"
   if( mon == 12 | mon == 1 | mon == 2 ){
     ndvi_string <- paste0(stat, "_", seasons[1], "_", as.character(buffers), "m_", year(as.Date(vector[date_colname])))
     output <- append(output, vector[ndvi_string])
@@ -69,26 +71,25 @@ seasonal_ndvi <- function(vector, stat="max", id_colname = "StudyID", date_colna
 }
 
 
-#Apply NDVI assignment functions and format output 
+### Apply NDVI assignment functions and format output 
 add_ndvi <- function(data, id_colname = "StudyID", date_colname = "b_finisheddate", buffers = c(50,100,250,500)){
-  #annual max 
+  # annual max 
   annual_max <- t(apply(data,1,annual_ndvi, id_colname=id_colname, date_colname=date_colname, buffers=buffers))
   annual_max <- as.data.frame(annual_max)
   colnames(annual_max) <- c(id_colname, paste0("ndvi_", buffers, "_amax") )
   data <- data[, !names(data) %in% c(generate_ndvi_colnames(time_measure="annual"))]
   
-  #seasonal max 
+  # seasonal max 
   seasonal_max <- t(apply(data,1, seasonal_ndvi, stat="max", id_colname=id_colname, date_colname=date_colname, buffers=buffers))
   seasonal_max <- as.data.frame(seasonal_max)
   colnames(seasonal_max) <-c(id_colname, paste0("ndvi_", buffers, "_smax"))
   data <- data[, !names(data) %in% c(generate_ndvi_colnames(time_measure="seasonal", stat="max"))]
   
-  #seasonal max 
+  # seasonal max 
   seasonal_mean <- t(apply(data,1, seasonal_ndvi, stat="mean", id_colname=id_colname, date_colname=date_colname, buffers=buffers))
   seasonal_mean <- as.data.frame(seasonal_mean)
   colnames(seasonal_mean) <-c(id_colname, paste0("ndvi_", buffers, "_smean"))
   data <- data[, !names(data) %in% c(generate_ndvi_colnames(time_measure="seasonal", stat="mean"))]
-  
   
   output <- inner_join(data, annual_max, by = id_colname)
   output <- inner_join(output, seasonal_max, by = id_colname)
@@ -97,7 +98,8 @@ add_ndvi <- function(data, id_colname = "StudyID", date_colname = "b_finisheddat
   return(output)
 }
 
-#Separate Urban and Non-Urban - return a categorical 1=Urban, 0=Non-urban
+
+### Separate Urban and Non-Urban - return a categorical 1=Urban, 0=Non-urban
 add_urban_cat <- function(data){
   data$ct_urban_cat = NA
   for(i in 1:dim(data)[1]){
@@ -114,7 +116,7 @@ add_urban_cat <- function(data){
   return(data)
 }
 
-#Compute IQR for all NDVI measures 
+### Compute Quantiles and IQR for all NDVI measures 
 process_ndvi <- function(data, outpath){
   if(!is.data.frame(data) || !all(colnames(data) != "")){
     stop("Input must be a data frame with named columns")
@@ -147,20 +149,3 @@ process_ndvi <- function(data, outpath){
   write.csv(breaks, outpath)
   return(data)
 }
-
-#Create Quartiles of NDVI IQR for all measures 
-# get_ndvi_iqr_quartiles <- function(data){
-#   ndvi_colnames <- names(data)[grep("iqr", names(data))]
-#   if(!is.data.frame(data) || !all(colnames(data) != "")){
-#     stop("Input must be a data frame with named columns")
-#   }
-#   for(i in 1:length(ndvi_colnames)){
-#     q <- quantile(data[,ndvi_colnames[i]], probs = c(0, 0.25, 0.5, 0.75, 1), names = TRUE, na.rm=TRUE)
-#     #rewrite 
-#     data[paste0(ndvi_colnames[i], "_quantile")] <- case_when(as.logical(data[,ndvi_colnames[i]] <= q[2]) ~ "1",
-#                                                              as.logical(data[,ndvi_colnames[i]] <= q[3]) ~ "2",
-#                                                              as.logical(data[,ndvi_colnames[i]] <= q[4]) ~ "3",
-#                                                              TRUE ~ "4")
-#   }
-#   return(data)
-# }
