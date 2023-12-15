@@ -48,12 +48,13 @@ iqr <- dplyr::select(all_n, matches('iqr'))
 
 # Rename columns
 cnames <- paste0( c(rep('Amax', 4), rep('Smax', 4), rep('Smean', 4)), ' ', rep(c('50m', '100m', '250m', '500m'), 3))
+cnames <- rep(c("50m", "100m", "250m", "500m"),4)
 colnames(n) <- cnames
 colnames(iqr) <- cnames
 
 dat <- n
 m <- round(cor(dat, method = "spearman"), 2)
-m <- round(cor(dat, method = "pearson"), 2)
+#m <- round(cor(dat, method = "pearson"), 2)
 
 cor.mtest <- function(mat, ...) {
     mat <- as.matrix(mat)
@@ -79,7 +80,7 @@ col <- colorRampPalette(c('#850a0a', '#c90f0f', '#f03232', '#fabbbb', '#ffffff',
 ```
 
 ```{r, export correlation plot }
-png("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/corrplot.png")
+png("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/corrplot_V2_spearman.png")
 corrplot(m, method="color", 
          #col=brewer.pal(n=11, name="PiYG"), 
          col = col(200),
