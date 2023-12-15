@@ -20,17 +20,22 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 ```{r}
 par(mfrow=c(1,2))
 df <- data
+
 spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + ct_HHinc + ct_lths , data = df, na.action=na.omit )
 plot(spline1, las=1, ylab="PSS Score", xlab= "NDVI")
+abline(h=0, lty = 5, col = "lightgrey")
 legend("topleft", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
 mtext ("Full Sample", side=3, line=0.4, adj=1.85, cex=1.2)
 text(0.8, 1, paste0("p-value: ", round(summary(spline1)$s.table[4], 3)), cex = 0.8)
 
+
 spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + ct_HHinc + ct_lths , data = df, na.action=na.omit )
 plot(spline2, las=1, ylab="MDI Score", xlab= "NDVI")
+abline(h=0, lty = 5, col = "lightgrey")
 legend("topleft", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
 #mtext ("MDI Score", side=3, line=0.4, adj=-0.08, cex=0.9)
 text(0.8, 1.2, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex = 0.8)
+
 
 
 ```
