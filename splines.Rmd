@@ -56,6 +56,7 @@ legend("topleft", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
 text(0.75, 2.7, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex = 0.8)
 
 ```
+
 ```{r}
 par(mfrow=c(1,2))
 df <- NSES3_rural
