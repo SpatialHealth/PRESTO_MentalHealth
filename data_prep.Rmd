@@ -29,8 +29,9 @@ years <- 2012:2019
 buffers <- c(50,100,250,500)
 
 # select important columns
-data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden', generate_all_ndvi_colnames(years,buffers))]
-rm(data_full)
+data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden',
+                   'b_livebirths', 'b_everpregnant', generate_all_ndvi_colnames(years,buffers))]
+#rm(data_full)
 
 # get NDVI - This may take a while
 data <- add_ndvi(data, id_colname = "StudyID", date_colname = "b_finisheddate", buffers=buffers)
@@ -40,32 +41,30 @@ data <- add_urban_cat(data)
 ```
 
 ```{r, Add Exercise Data}
-### UPDATE THIS, make this a function 
-#format exercise composite 
+rescale_met <- function(vec){
+  out <- case_when(
+    vec == 1 ~ 0,
+    vec == 2 ~ 0.5, 
+    vec == 3 ~ 1,
+    vec == 4 ~ 2, 
+    vec == 5 ~ 3.5,
+    vec == 6 ~ 5.5, 
+    vec == 7 ~ 7, 
+    TRUE ~ NA
+  )
+  return(out)
+}
 exer_names <- c('b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden') #not including 'b_yoga'
-pa_old <- as.matrix(data[exer_names])
-pa_new <- matrix(NA, nrow = dim(pa_old)[1], ncol = dim(pa_old)[2])
-pa_adjusted <- matrix(NA, nrow = dim(pa_old)[1], ncol = dim(pa_old)[2])
-colnames(pa_adjusted) <- exer_names
-
 scaling_factors <- c(2.0, 3.8, 2.5, 7.5, 4.5, 7.0, 6.5, 2.5) #2.5 for b_yoga
 
-for(i in 1:dim(pa_new)[2]){
- pa_new[,i] <- case_when(
-  pa_old[,i] == 1 ~ 0,
-  pa_old[,i] == 2 ~ 0.5,
-  pa_old[,i] == 3 ~ 1,
-  pa_old[,i] == 4 ~ 2,
-  pa_old[,i] == 5 ~ 3.5,
-  pa_old[,i] == 6 ~ 5.5,
-  pa_old[,i] == 7 ~ 7,
-  TRUE ~ NA         
-) 
- pa_adjusted[,i] <- pa_new[,i] * scaling_factors[i]
-}
-
-data$b_totalmet <- apply(pa_adjusted, 1, sum)
-data <- data |> select(!all_of(exer_names))
+# re-scale individual met vars
+data <- data |>
+  mutate(across(exer_names, rescale_met))
+data[exer_names] <- sweep(data[exer_names], MARGIN=2,scaling_factors, `*`)
+# create composite met hours variable
+data$b_totalmet <- apply(data[exer_names], sum, MARGIN = 1)
+data <- data |>
+  select(!all_of(exer_names))
 
 ```
 

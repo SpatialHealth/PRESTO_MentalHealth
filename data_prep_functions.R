@@ -1,7 +1,7 @@
 library(dplyr)
 library(lubridate)
 
-######IS THIS NECESSARY#######
+
 ### Generates column names of NDVI measures 
 generate_ndvi_colnames <- function(time_measure = "seasonal", stat = "max", years = 2012:2019, buffers = c(50,100,250,500)){
   output <- NA
