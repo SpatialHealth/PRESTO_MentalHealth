@@ -21,8 +21,8 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 data <- data
 
 #set up model runs 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths")
-models <- list(x[1:2], x[1:4], x[1:6]) #Model 1, 2, and 3
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
 buffers <- c(100)                      #pick one buffer radius for this analysis
 ndvi_measures <- c("amax", "smax", "smean")
 
@@ -63,6 +63,5 @@ kbl(full, caption = paste0(buffers[1],"m NDVI Buffer")) %>%
   pack_rows("PSS", 1, 3) %>%
   pack_rows("MDI", 4, 6) 
 ```
-
 
 

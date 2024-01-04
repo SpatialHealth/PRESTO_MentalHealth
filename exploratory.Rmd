@@ -100,7 +100,7 @@ dev.off()
 ```{r}
 # Estimates and CI for select models 
 source("analysis_functions.R")
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths")
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
 
 # Full sample - PSS model 1 
 ma <- lmfull_processed(data = data, y = 'pss_score', buffers = 100, x = x[1:2], ndvi_measure = 'amax', sig_figs = 2)
@@ -109,7 +109,7 @@ ma
 mb <- lmfull_processed(data = data, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2)
 mb
 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income",  "ct_lths") 
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_lths") 
 
 # NSES1 - urban
 m1 <- lmfull_processed(data = NSES1_urban, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )
@@ -128,13 +128,15 @@ m3
 ```{r}
 ### REPEAT w/ MDI 
 # Full sample - model 1 
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+
 ma <- lmfull_processed(data = data, y = 'b_mdi_score', buffers = 100, x = x[1:2], ndvi_measure = 'amax', sig_figs = 2)
 ma
 
 mb <- lmfull_processed(data = data, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2)
 mb
 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income",  "ct_lths") 
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income",  "b_totalmet", "ct_lths") 
 
 # NSES1 - urban
 m1 <- lmfull_processed(data = NSES1_urban, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )

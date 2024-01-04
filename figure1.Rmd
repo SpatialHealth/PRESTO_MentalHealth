@@ -19,7 +19,7 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 
 ```{r}
 #set up model runs 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_lths") #Model 3 (without ct_HHinc)
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_lths") #Model 3 (without ct_HHinc)
 buffers <- c(50, 100, 250, 500)
 datasets <- list(NSES1, NSES2, NSES3, NSES1_urban, NSES2_urban,NSES3_urban, NSES1_rural, NSES2_rural, NSES3_rural)
 ndvi_measure <- "amax" #CHANGE TO "smax" or "smean" to explore other NDVI measures

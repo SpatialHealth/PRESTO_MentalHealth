@@ -33,6 +33,7 @@ var_label(data$ageatqstn) <- "Age"
 var_label(data$race_ethnic_factors) <- "Race/ethnicity categories-census"
 var_label(data$income_factors) <- "Income (household)"
 var_label(data$educ_factors) <- "Education"
+var_label(data$b_totalmet) <- "Exercise - Total Met Score (?)"
 var_label(data$ct_HHinc) <- "Census tract - Income (household)"
 var_label(data$ct_lths) <- "Census tract - LTHS"
 var_label(data$ct_urban_cat) <- "Census tract - Urban"
@@ -40,7 +41,7 @@ var_label(data$pss_score) <- "PSS"
 var_label(data$b_mdi_score) <- "MDI" 
 
 # Assign variables for table one 
-myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score")
+myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score")
 catVars <- c( "race_ethnic_factors", "educ_factors",  "income_factors", "ct_urban_cat")
 ```
 
@@ -75,6 +76,7 @@ var_label(dropped$ageatqstn) <- "Age"
 var_label(dropped$race_ethnic_factors) <- "Race/ethnicity categories-census"
 var_label(dropped$income_factors) <- "Income (household)"
 var_label(dropped$educ_factors) <- "Education"
+var_label(dropped$b_totalmet) <- "Exercise - Total Met Score (?)"
 var_label(dropped$ct_HHinc) <- "Census tract - Income (household)"
 var_label(dropped$ct_lths) <- "Census tract - LTHS"
 var_label(dropped$ct_urban_cat) <- "Census tract - Urban"
@@ -82,7 +84,7 @@ var_label(dropped$pss_score) <- "PSS"
 var_label(dropped$b_mdi_score) <- "MDI" 
 
 # Assign variables for table one 
-myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score")
+myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "b_totalmet",  "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score")
 catVars <- c( "race_ethnic_factors", "educ_factors",  "income_factors", "ct_urban_cat")
 ```
 

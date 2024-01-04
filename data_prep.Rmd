@@ -2,7 +2,7 @@
 title: "data_prep"
 author: "Cam Reimer"
 date created: "2/4/2023"
-last updated: "10/5/2023"
+last updated: "1/4/2024"
 output: html_document
 ---
 
@@ -29,7 +29,7 @@ years <- 2012:2019
 buffers <- c(50,100,250,500)
 
 # select important columns
-data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", generate_all_ndvi_colnames(years,buffers))]
+data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden', generate_all_ndvi_colnames(years,buffers))]
 rm(data_full)
 
 # get NDVI - This may take a while
@@ -39,18 +39,48 @@ data <- add_ndvi(data, id_colname = "StudyID", date_colname = "b_finisheddate", 
 data <- add_urban_cat(data)
 ```
 
+```{r, Add Exercise Data}
+### UPDATE THIS, make this a function 
+#format exercise composite 
+exer_names <- c('b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden') #not including 'b_yoga'
+pa_old <- as.matrix(data[exer_names])
+pa_new <- matrix(NA, nrow = dim(pa_old)[1], ncol = dim(pa_old)[2])
+pa_adjusted <- matrix(NA, nrow = dim(pa_old)[1], ncol = dim(pa_old)[2])
+colnames(pa_adjusted) <- exer_names
+
+scaling_factors <- c(2.0, 3.8, 2.5, 7.5, 4.5, 7.0, 6.5, 2.5) #2.5 for b_yoga
+
+for(i in 1:dim(pa_new)[2]){
+ pa_new[,i] <- case_when(
+  pa_old[,i] == 1 ~ 0,
+  pa_old[,i] == 2 ~ 0.5,
+  pa_old[,i] == 3 ~ 1,
+  pa_old[,i] == 4 ~ 2,
+  pa_old[,i] == 5 ~ 3.5,
+  pa_old[,i] == 6 ~ 5.5,
+  pa_old[,i] == 7 ~ 7,
+  TRUE ~ NA         
+) 
+ pa_adjusted[,i] <- pa_new[,i] * scaling_factors[i]
+}
+
+data$b_totalmet <- apply(pa_adjusted, 1, sum)
+data <- data |> select(!all_of(exer_names))
+
+```
+
 ```{r, Check for Missingness Sequentially}
 # specify columns
-confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban")
+confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban")
 outcomes <- c("pss_score", "b_mdi_score")
 exposures <- names(data)[grep("ndvi", names(data))]
 
 # Initialize missing data table
-missing <- data.frame(rep(NA, 10))
+missing <- data.frame(rep(NA, 11))
 colnames(missing) <- '# of Participants w/ Missing Data'
 rownames(missing) <- c('All Exposures',
                        'All Outcomes', 'PSS','MDI Score',  
-                       'All Confounders', 'Age', 'Race/Ethnicity', 'Education', 'Income', 'Census-tract Measures')
+                       'All Confounders', 'Age', 'Race/Ethnicity', 'Education', 'Income', 'Exercise', 'Census-tract Measures')
 
 # 1. Exposures 
 ex <- data %>% dplyr::filter(complete.cases(select(., all_of(exposures))))
@@ -71,21 +101,23 @@ age <- out %>% dplyr::filter(complete.cases(select(., "ageatqstn")))
 race <- age %>% dplyr::filter(complete.cases(select(., "b_race_ethnic_census")))
 educ <- race %>% dplyr::filter(complete.cases(select(., "b_educ")))
 income <- educ %>% dplyr::filter(complete.cases(select(., "b_income")))
-ct <- income %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban", "ct_lths", "ct_HHinc")))))
+exercise <- income %>% dplyr::filter(complete.cases(select(., "b_totalmet")))
+ct <- exercise %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban", "ct_lths", "ct_HHinc")))))
 
 missing[5,] <- nrow(out) - nrow(con)
 missing[6,] <- nrow(out) - nrow(age)
 missing[7,] <- nrow(age) - nrow(race)
 missing[8,] <- nrow(race) - nrow(educ)
 missing[9,] <- nrow(educ) - nrow(income)
-missing[10,] <- nrow(income) - nrow(ct)
+missing[10,] <- nrow(income) - nrow(exercise)
+missing[11,] <- nrow(exercise) - nrow(ct)
 
 # 4. Create table
 kbl(missing, caption = '') %>%
   kable_paper("striped", full_width = F) %>%
   pack_rows("Exposures", 1, 1) %>%
   pack_rows("Outcomes", 2, 4) %>%
-  pack_rows("Confounders", 5, 10)
+  pack_rows("Confounders", 5, 11)
 
 ### Drop NAs
 data_final = na.omit(data)
