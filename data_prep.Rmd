@@ -2,7 +2,7 @@
 title: "data_prep"
 author: "Cam Reimer"
 date created: "2/4/2023"
-last updated: "1/4/2024"
+last updated: "1/9/2024"
 output: html_document
 ---
 
@@ -119,7 +119,8 @@ kbl(missing, caption = '') %>%
   pack_rows("Confounders", 5, 11)
 
 ### Drop NAs
-data_final = na.omit(data)
+#data_final = na.omit(data)
+data_final <- data |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures)))
 dropped <- subset(data, !(data$StudyID %in% data_final$StudyID))
 
 # checks 
@@ -128,6 +129,19 @@ if((nrow(data)-nrow(ct)) != nrow(dropped)){
 }
 
 rm(ex, out, pss, mdi, con, age, race, educ, income, ct)
+```
+
+```{r, Prep for Sensitivity Analysis}
+# attempt time 
+cycles_3 <- subset(data, data$var_name < 3) |> na.omit()
+cycles_6 <- subset(data, data$var_name < 6) |> na.omit()
+
+# parity 
+parous <- subset(data, data$var_name2 > 0) |> na.omit()
+nulliparous <- subset(data, data_var_name == 0) |> na.omit()
+
+# export 
+save(cycles_3, cycles_6, parous, nulliparous, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/sensitivity_data.RData")
 ```
 
 ```{r Get quantiles and assign factors}
