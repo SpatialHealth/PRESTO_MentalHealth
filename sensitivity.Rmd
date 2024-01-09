@@ -1,0 +1,175 @@
+---
+title: "sensitivity"
+author: "Cam Reimer"
+date: "2024-01-09"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(labelled)
+library(tidyr)
+library(kableExtra)
+
+source("analysis_functions.R")
+load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
+load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/sensitivity_data.RData")
+```
+
+```{r, Attmpt Time: PSS}
+#set up model runs 
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
+buffers <- c(100)                      #pick one buffer radius for this analysis
+ndvi_measures <- c("amax", "smax", "smean")
+outcome <- "pss_score"
+
+# <3 cycles 
+pss_3cycles <- data.frame()
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    pss_3cycles[i,j] <- lmfull_processed(data=cycles_3, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(pss_3cycles) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(pss_3cycles) <- c("(<3) Model 1", "(<3) Model 2", "(<3) Model 3")
+
+# <6 cycles 
+pss_6cycles <- data.frame()
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    pss_6cycles[i,j] <- lmfull_processed(data=cycles_6, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(pss_6cycles) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(pss_6cycles) <- c("(<6) Model 1", "(<6) Model 2", "(<6) Model 3")
+
+# Create table
+pss_cycles <- rbind(pss_3cycles, pss_6cycles)
+
+kbl(pss_cycles, caption = paste0(buffers[1],"m NDVI Buffer - PSS")) %>%
+  kable_paper("striped", full_width = F) %>%
+  pack_rows("<3 cycles", 1, 3) %>%
+  pack_rows("<6 cycles", 4, 6) 
+```
+
+```{r, Attmpt Time: MDI}
+#set up model runs 
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
+buffers <- c(100)                      #pick one buffer radius for this analysis
+ndvi_measures <- c("amax", "smax", "smean")
+outcome <- "b_mdi_score"
+
+# <3 cycles 
+mdi_3cycles <- data.frame()
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    mdi_3cycles[i,j] <- lmfull_processed(data=cycles_3, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(mdi_3cycles) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(mdi_3cycles) <- c("(<3) Model 1", "(<3) Model 2", "(<3) Model 3")
+
+# <6 cycles 
+mdi_6cycles <- data.frame()
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    mdi_6cycles[i,j] <- lmfull_processed(data=cycles_6, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(mdi_6cycles) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(mdi_6cycles) <- c("(<6) Model 1", "(<6) Model 2", "(<6) Model 3")
+
+# Create table
+mdi_cycles <- rbind(mdi_3cycles, mdi_6cycles)
+
+kbl(mdi_cycles, caption = paste0(buffers[1],"m NDVI Buffer - MDI")) %>%
+  kable_paper("striped", full_width = F) %>%
+  pack_rows("<3 cycles", 1, 3) %>%
+  pack_rows("<6 cycles", 4, 6) 
+```
+
+```{r, Parity: PSS}
+#set up model runs 
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
+buffers <- c(100)                      #pick one buffer radius for this analysis
+ndvi_measures <- c("amax", "smax", "smean")
+outcome <- "pss_score"
+
+# <3 cycles 
+pss_parous <- data.frame()
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    pss_parous[i,j] <- lmfull_processed(data=parous, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(pss_parous) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(pss_parous) <- c("(parous) Model 1", "(parous) Model 2", "(parous) Model 3")
+
+# <6 cycles 
+pss_nulli <- data.frame()
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    pss_nulli[i,j] <- lmfull_processed(data=nulliparous, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(pss_nulli) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(pss_nulli) <- c("(nulli) Model 1", "(nulli) Model 2", "(nulli) Model 3")
+
+# Create table
+pss_parity <- rbind(pss_parous, pss_nulli)
+
+kbl(pss_parity, caption = paste0(buffers[1],"m NDVI Buffer - PSS")) %>%
+  kable_paper("striped", full_width = F) %>%
+  pack_rows("Parous", 1, 3) %>%
+  pack_rows("<Nulliparous", 4, 6) 
+```
+
+```{r, Parity: MDI}
+#set up model runs 
+x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
+buffers <- c(100)                      #pick one buffer radius for this analysis
+ndvi_measures <- c("amax", "smax", "smean")
+outcome <- "b_mdi_score"
+
+# <3 cycles 
+mdi_parous <- data.frame()
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    mdi_parous[i,j] <- lmfull_processed(data=parous, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(mdi_parous) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(mdi_parous) <- c("(parous) Model 1", "(parous) Model 2", "(parous) Model 3")
+
+# <6 cycles 
+mdi_nulli <- data.frame()
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    mdi_nulli[i,j] <- lmfull_processed(data=nulliparous, y=outcome, buffers=buffers, x=models[[i]], ndvi_measure=ndvi_measures[j])
+  }
+}
+colnames(mdi_nulli) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(mdi_nulli) <- c("(nulli) Model 1", "(nulli) Model 2", "(nulli) Model 3")
+
+# Create table
+mdi_parity <- rbind(mdi_parous, mdi_nulli)
+
+kbl(mdi_parity, caption = paste0(buffers[1],"m NDVI Buffer - MDI")) %>%
+  kable_paper("striped", full_width = F) %>%
+  pack_rows("Parous", 1, 3) %>%
+  pack_rows("Nulliparous", 4, 6) 
+```
+
+```{r, Export}
+pss_all <- rbind(pss_cycles, pss_parity)
+mdi_all <- rbind(mdi_cycles, mdi_parity)
+
+write.csv(pss_all, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/pss_table2.csv")
+write.csv(mdi_all, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/mdi_table2.csv")
+
+```
