@@ -1,17 +1,22 @@
 # functions to do analysis and organize output 
-lmfun<-function(data,y,buffer,x, ndvi_measure){
+lmfun<-function(data,y,buffer,x, ndvi_measure, iqr){
+  if(iqr){
+    xname = paste(c(paste0("ndvi_",as.character(buffer), "_", as.character(ndvi_measure),"_iqr"),x) , collapse = " + ")
+  }else{
+    xname = paste(c(paste0("ndvi_",as.character(buffer), "_", as.character(ndvi_measure)),x) , collapse = " + ")
+  }
   # format function call 
-  xname = paste(c(paste0("ndvi_",as.character(buffer), "_", as.character(ndvi_measure),"_iqr"),x) , collapse = " + ")
+  #xname = paste(c(paste0("ndvi_",as.character(buffer), "_", as.character(ndvi_measure),"_iqr"),x) , collapse = " + ")
   formula1<-as.formula(paste(y,"~",xname))
   lm.fit<-do.call("lm",list(data=quote(data),formula1))
   return(lm.fit)
 }
 
-lmfull_processed<-function(data, y, buffers, x, sig_figs = 3, ndvi_measure){
+lmfull_processed<-function(data, y, buffers, x, sig_figs = 3, ndvi_measure, iqr = TRUE){
   # run models and store as output
   model = vector(mode="list")
   for(i in 1:length(buffers)){
-    model[[i]] = lmfun(data = data, y = y, buffer = buffers[i], x = x, ndvi_measure = ndvi_measure)
+    model[[i]] = lmfun(data = data, y = y, buffer = buffers[i], x = x, ndvi_measure = ndvi_measure, iqr = iqr)
   }
   # format and store summary output
   results = data.frame(matrix(data = NA, nrow = 1, ncol = length(buffers)))
@@ -25,11 +30,11 @@ lmfull_processed<-function(data, y, buffers, x, sig_figs = 3, ndvi_measure){
   return(results)
 }
 
-lmfull<-function(data, y, buffers, x, sig_figs = 3, ndvi_measure){
+lmfull<-function(data, y, buffers, x, sig_figs = 3, ndvi_measure, iqr = TRUE){
   # run models and store as output
   model = vector(mode="list")
   for(i in 1:length(buffers)){
-    model[[i]] = lmfun(data = data, y = y, buffer = buffers[i], x = x, ndvi_measure = ndvi_measure)
+    model[[i]] = lmfun(data = data, y = y, buffer = buffers[i], x = x, ndvi_measure = ndvi_measure, iqr = iqr)
   }
   results = data.frame(matrix(data = NA, nrow = length(buffers), ncol = 3))
   for(i in 1:length(buffers)){
