@@ -21,7 +21,8 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 ndvi_measure <- "amax"  # CHANGE TO "smax" or "smean" to explore other NDVI measures
 outcome = "pss_score"   # CHANGE OUTCOME to "b_mdi_score" to recreate figure 2
 iqr = TRUE              # Use NDVI IQR?
-out_dir <- "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/"  # Directory to save output figure
+out_dir <- "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/"        # Directory to save output figure
+sup_dir <- "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/"  # Directory to save figure for supplement
 ################################################################################
 
 # Set up model runs 
@@ -75,8 +76,14 @@ ggplot(data=figure1, aes(x = buffer, y = Mean, color=quantile))+
 ```
 
 ```{r, Export}
+if(iqr){
+  out_path <- out_dir
+}else{
+  out_path <- paste0(sup_dir, 'sup_')
+}
+
 outname <- case_when(outcome == 'pss_score' ~ 'figure1',
                      outcome == 'b_mdi_score' ~ 'figure2') %>%
-  paste0(out_dir, ., '.png')
+  paste0(out_path, ., '.png')
 ggsave(outname, device = "png", width = 9, height = 6, units = "in")
 ```
