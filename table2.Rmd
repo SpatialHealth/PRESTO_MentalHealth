@@ -66,5 +66,10 @@ kbl(full, caption = paste0(buffers[1],"m NDVI Buffer")) %>%
 ```
 
 ```{r, Export}
-write.csv(full, "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/table2.csv")
+if(iqr){
+  write.csv(full, "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/table2.csv")
+}else{
+  write.csv(full, "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/NDVInotIQR_table2.csv")
+}
+
 ```
