@@ -67,9 +67,11 @@ kbl(full, caption = paste0(buffers[1],"m NDVI Buffer")) %>%
 
 ```{r, Export}
 if(iqr){
-  write.csv(full, "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/table2.csv")
+  write.csv(full, 
+            paste0("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/table2_", buffers[1], "m.csv"))
 }else{
-  write.csv(full, "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/NDVInotIQR_table2.csv")
+  write.csv(full, 
+            paste0("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/NDVInotIQR_", buffers[1], "m_table2.csv"))
 }
 
 ```
