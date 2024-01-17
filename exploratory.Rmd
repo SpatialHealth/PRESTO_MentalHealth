@@ -47,8 +47,8 @@ n <- dplyr::select(all_n, !matches('iqr'))
 iqr <- dplyr::select(all_n, matches('iqr'))
 
 # Rename columns
-#cnames <- paste0( c(rep('Annual max', 4), rep('Sesonal max', 4), rep('Sesonal mean', 4)), ' ', rep(c('50m', '100m', '250m', '500m'), 3))
-cnames <- rep(c("50m", "100m", "250m", "500m"),4)
+cnames <- paste0( c(rep('Annual max', 4), rep('Sesonal max', 4), rep('Sesonal mean', 4)), ' ', rep(c('50m', '100m', '250m', '500m'), 3))
+#cnames <- rep(c("50m", "100m", "250m", "500m"),4)
 colnames(n) <- cnames
 colnames(iqr) <- cnames
 
@@ -95,6 +95,7 @@ corrplot(m, method="color",
          )
 dev.off()
 
+write.csv(m,"C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/NDVIcorrelations.csv" )
 ```
 
 ```{r}
