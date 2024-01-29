@@ -21,7 +21,7 @@ library(kableExtra)
 # load in functions
 source("~/R/PRESTO/data_prep_functions.R")
 # load in data
-data_full <- read_sas("ndvi_mental_001.sas7bdat")
+data_full <- read_sas("ndvi_mental_002.sas7bdat")
 ```
 
 ```{r Data Wrangling, Add NDVI}
@@ -30,7 +30,7 @@ buffers <- c(50,100,250,500)
 
 # select important columns
 data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden',
-                   'b_livebirths', 'b_everpregnant', generate_all_ndvi_colnames(years,buffers))]
+                   'b_livebirths', 'b_everpregnant', 'ttp_entry', generate_all_ndvi_colnames(years,buffers))]
 #rm(data_full)
 
 # get NDVI - This may take a while
@@ -59,7 +59,7 @@ scaling_factors <- c(2.0, 3.8, 2.5, 7.5, 4.5, 7.0, 6.5, 2.5) #2.5 for b_yoga
 
 # re-scale individual met vars
 data <- data |>
-  mutate(across(exer_names, rescale_met))
+  mutate(across(all_of(exer_names), rescale_met))
 data[exer_names] <- sweep(data[exer_names], MARGIN=2,scaling_factors, `*`)
 # create composite met hours variable
 data$b_totalmet <- apply(data[exer_names], sum, MARGIN = 1)
@@ -119,7 +119,6 @@ kbl(missing, caption = '') %>%
   pack_rows("Confounders", 5, 11)
 
 ### Drop NAs
-#data_final = na.omit(data)
 data_final <- data |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures)))
 dropped <- subset(data, !(data$StudyID %in% data_final$StudyID))
 
@@ -128,20 +127,7 @@ if((nrow(data)-nrow(ct)) != nrow(dropped)){
   paste0("ERROR: Some missing data is unaccounted for!")
 }
 
-rm(ex, out, pss, mdi, con, age, race, educ, income, ct)
-```
-
-```{r, Prep for Sensitivity Analysis}
-# attempt time 
-cycles_3 <- subset(data, data$var_name < 3) |> na.omit()
-cycles_6 <- subset(data, data$var_name < 6) |> na.omit()
-
-# parity 
-parous <- subset(data, data$var_name2 > 0) |> na.omit()
-nulliparous <- subset(data, data_var_name == 0) |> na.omit()
-
-# export 
-save(cycles_3, cycles_6, parous, nulliparous, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/sensitivity_data.RData")
+rm(ex, out, pss, mdi, con, age, race, educ, income, ct, exercise)
 ```
 
 ```{r Get quantiles and assign factors}
@@ -154,10 +140,22 @@ data_final <- data_final %>%
 
 # turn variables into factors 
 factor_vars <- c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat", names(data_final[grep("quantile", names(data_final))]))
-
 data_final[factor_vars] <- lapply(data_final[factor_vars], factor)
 
 dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")] <- lapply(dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")], factor)
+```
+
+```{r, Prep for Sensitivity Analysis}
+# attempt time 
+cycles_3 <- subset(data_final, data_final$ttp_entry < 3) |> na.omit()
+cycles_6 <- subset(data_final, data_final$ttp_entry < 6) |> na.omit()
+
+# parity 
+parous <- subset(data_final, data_final$b_livebirths > 0) |> na.omit()
+nulliparous <- subset(data_final, data_final$b_livebirths == 0) |> na.omit()
+
+# export 
+save(cycles_3, cycles_6, parous, nulliparous, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/sensitivity_data.RData")
 ```
 
 ```{r Create subsets}
