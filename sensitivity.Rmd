@@ -233,11 +233,11 @@ kbl(full, caption = paste0(buffers[1],"m NDVI Buffer")) %>%
 
 # Export 
 ```{r, Export}
-cycles_table2 <- rbind(pss_cycles, mdi_cycles)
-parity_table2 <- rbind(pss_parity, mdi_parity)
+sens_pss_table2 <- rbind(pss_cycles, pss_parity)
+sens_mdi_table2 <- rbind(mdi_cycles, mdi_parity)
 
-write.csv(cycles_table2, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/cycles_table2.csv")
-write.csv(parity_table2, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/parity_table2.csv")
+write.csv(sens_pss_table2, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/sens_pss_table2.csv")
+write.csv(sens_mdi_table2, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/sens_mdi_table2.csv")
 write.csv(full, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/noexercise_table2.csv")
 
 ```
