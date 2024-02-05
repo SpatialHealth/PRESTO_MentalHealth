@@ -61,6 +61,7 @@ print(tab1_100, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqua
 # full sample stats
 # tab1_100_overall <- CreateTableOne(vars = myVars , data = data, factorVars = catVars, test = FALSE)
 # print(tab1_100_overall, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual = TRUE)
+     
 ```
 
 #Dropped Participants ---------------------------------------------------------------------------
