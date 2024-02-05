@@ -38,6 +38,7 @@ data <- add_ndvi(data, id_colname = "StudyID", date_colname = "b_finisheddate", 
 
 # categorize ct_urban
 data <- add_urban_cat(data)
+   
 ```
 
 ```{r, Add Exercise Data}
