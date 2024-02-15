@@ -57,11 +57,6 @@ quantiles <- paste0("ndvi_", buffer, "_", ndvi_measure, "_quantile")
 # Stratified by greenness quartiles 
 tab1_100 <- CreateTableOne(vars = myVars, strata = quantiles, data = data, factorVars = catVars, test = FALSE, addOverall = TRUE)
 print(tab1_100, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual = TRUE)
-
-# full sample stats
-# tab1_100_overall <- CreateTableOne(vars = myVars , data = data, factorVars = catVars, test = FALSE)
-# print(tab1_100_overall, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual = TRUE)
-     
 ```
 
 #Dropped Participants ---------------------------------------------------------------------------
@@ -111,9 +106,6 @@ print(dropt, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual =
 #export 
 table1 <- print(tab1_100, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
 write.csv(table1, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1.csv")
-
-# table1_ovr <- print(tab1_100_overall, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
-# write.csv(table1_ovr, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1_overall.csv")
 
 dropt <- print(dropt, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
 write.csv(dropt, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1_dropped.csv")

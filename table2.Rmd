@@ -20,8 +20,10 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 ############# INPUTS ###########################################################
 data <- data            # Chose data (or subset of data) for this analysis 
 buffers <- c(100)       # Pick one buffer radius for this analysis
-iqr = TRUE              # Use NDVI IQR?
-sig_figs = 2            # Significant digits in table output
+iqr <- TRUE              # Use NDVI IQR?
+sig_figs <- 2            # Significant digits in table output
+outpath <- "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/"
+supplementary_outpath <- "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/"
 ################################################################################
 
 # set up model runs 
@@ -68,10 +70,9 @@ kbl(full, caption = paste0(buffers[1],"m NDVI Buffer")) %>%
 ```{r, Export}
 if(iqr){
   write.csv(full, 
-            paste0("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/table2_", buffers[1], "m.csv"))
+            paste0(outpath, "table2_", buffers[1], "m.csv"))
 }else{
   write.csv(full, 
-            paste0("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/NDVInotIQR_", buffers[1], "m_table2.csv"))
+            paste0(supplementary_outpath, "NDVInotIQR_", buffers[1], "m_table2.csv"))
 }
-
 ```
