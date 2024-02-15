@@ -47,6 +47,7 @@ annual_ndvi <- function(vector, id_colname = "StudyID", date_colname = "b_finish
   return(as.numeric(output))
 }
 
+
 ### Seasonal NDVI assignment function 
 seasonal_ndvi <- function(vector, stat="max", id_colname = "StudyID", date_colname = "b_finisheddate", buffers = c(50,100,250,500)){
   # initialize output

@@ -20,7 +20,7 @@ library(haven)
 library(kableExtra)
 # load in functions
 source("~/R/PRESTO/data_prep_functions.R")
-# load in data
+# path to full data set 
 data_full <- read_sas("ndvi_mental_002.sas7bdat")
 ```
 
@@ -31,17 +31,17 @@ buffers <- c(50,100,250,500)
 # select important columns
 data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden',
                    'b_livebirths', 'b_everpregnant', 'ttp_entry', generate_all_ndvi_colnames(years,buffers))]
-#rm(data_full)
+rm(data_full)
 
 # get NDVI - This may take a while
 data <- add_ndvi(data, id_colname = "StudyID", date_colname = "b_finisheddate", buffers=buffers)
 
 # categorize ct_urban
 data <- add_urban_cat(data)
-   
 ```
 
 ```{r, Add Exercise Data}
+# convert exercise/activity hours 
 rescale_met <- function(vec){
   out <- case_when(
     vec == 1 ~ 0,
@@ -62,11 +62,11 @@ scaling_factors <- c(2.0, 3.8, 2.5, 7.5, 4.5, 7.0, 6.5, 2.5) #2.5 for b_yoga
 data <- data |>
   mutate(across(all_of(exer_names), rescale_met))
 data[exer_names] <- sweep(data[exer_names], MARGIN=2,scaling_factors, `*`)
+
 # create composite met hours variable
 data$b_totalmet <- apply(data[exer_names], sum, MARGIN = 1)
 data <- data |>
   select(!all_of(exer_names))
-
 ```
 
 ```{r, Check for Missingness Sequentially}
@@ -133,7 +133,8 @@ rm(ex, out, pss, mdi, con, age, race, educ, income, ct, exercise)
 
 ```{r Get quantiles and assign factors}
 # GET NDVI IQR and Quartiles for raw NDVI and NDVI IQR
-data_final <- process_ndvi(data_final, outpath = 'C:/Users/camer/OneDrive/Documents/SPH/PRESTO/breaks.csv')
+data_final <- process_ndvi(data_final, 
+                           outpath = 'C:/Users/camer/OneDrive/Documents/SPH/PRESTO/breaks.csv') # saves NDVI quartile breaks
 
 # Create Quantiles for NSES
 data_final <- data_final %>%
