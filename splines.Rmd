@@ -19,7 +19,7 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 ```
 
 
-```{r}
+```{r Create Figure for Supplement}
 df <- data
 
 spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_HHinc + ct_lths , data = df, na.action=na.omit )
@@ -28,6 +28,9 @@ spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_
 ylim1 <- c(-1,1)
 xlim1 <- c(0,1)
 a <- 0.6
+
+png("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/splines.png", 
+    width = 9, height = 6, units = 'in', pointsize = 12, res = 300)
 par(mfrow=c(1,2))
 
 plot(NA, xlim = xlim1, ylim = ylim1, axes = FALSE, ylab = '', xlab = '')
@@ -37,7 +40,7 @@ plot(spline1, las=1, ylab="PSS Score", xlab= "NDVI", ylim = ylim1, xlim = xlim1)
 
 legend("topright", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
 #mtext ("Full Sample", side=3, line=0.4, adj=1.85, cex=1.2)
-text(0.825, 0.625, paste0("p-value: ", round(summary(spline1)$s.table[4], 3)), cex = 0.8)
+text(0.865, 0.745, paste0("p-value: ", round(summary(spline1)$s.table[4], 3)), cex = 0.8)
 
 
 plot(NA, xlim = xlim1, ylim = ylim1, axes = FALSE, ylab = '', xlab = '')
@@ -46,40 +49,103 @@ par(new = TRUE)
 plot(spline2, las=1, ylab="MDI Score", xlab= "NDVI", ylim = ylim1, xlim = xlim1)
 
 legend("topright", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
-text(0.825, 0.625, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex = 0.8)
+text(0.865, 0.745, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex = 0.8)
+
+dev.off()
 ```
 
-```{r}
-par(mfrow=c(1,2))
-df <- NSES1_urban
+```{r Full sample spline for viz }
+df <- data
+
 spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_HHinc + ct_lths , data = df, na.action=na.omit )
-plot(spline1, las=1, ylab="PSS Score", xlab= "NDVI")
-legend("topleft", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
-mtext ("1st NSES Quantile, Urban Participants", side=3, line=0.4, adj=-1.2, cex=1.2)
-text(0.75, 1.7, paste0("p-value: ", round(summary(spline1)$s.table[4], 3)), cex = 0.8)
-
 spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_HHinc + ct_lths , data = df, na.action=na.omit )
-plot(spline2, las=1, ylab="MDI Score", xlab= "NDVI")
-legend("topleft", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
-#mtext ("MDI Score", side=3, line=0.4, adj=-0.08, cex=0.9)
-text(0.75, 2.7, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex = 0.8)
 
-```
+ylim1 <- c(-1,1)
+xlim1 <- c(0,1)
+a <- 0.6
 
-```{r}
 par(mfrow=c(1,2))
-df <- NSES3_rural
-spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + ct_HHinc + ct_lths , data = df, na.action=na.omit )
-plot(spline1, las=1, ylab="PSS Score", xlab= "NDVI")
-legend("topleft", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
-mtext ("3rd NSES Quantile, Rural Participants", side=3, line=0.4, adj=-1.3, cex=1.2)
-text(0.8, 2.7, paste0("p-value: ", round(summary(spline1)$s.table[4], 3)), cex = 0.8)
 
-spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + ct_HHinc + ct_lths , data = df, na.action=na.omit )
-plot(spline2, las=1, ylab="MDI Score", xlab= "NDVI")
-legend("topleft", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
-#mtext ("MDI Score", side=3, line=0.4, adj=-0.08, cex=0.9)
-text(0.8, 3.6, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex = 0.8)
+plot(NA, xlim = xlim1, ylim = ylim1, axes = FALSE, ylab = '', xlab = '')
+abline(h=0, lty = 3, col = alpha("grey", a))
+par(new = TRUE)
+plot(spline1, las=1, ylab="PSS Score", xlab= "NDVI", ylim = ylim1, xlim = xlim1)
 
+legend("topright", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
+mtext ("Full Sample", side=3, line=0.4, adj=1.85, cex=1.2)
+text(0.81, 0.635, paste0("p-value: ", round(summary(spline1)$s.table[4], 3)), cex = 0.8)
+
+
+plot(NA, xlim = xlim1, ylim = ylim1, axes = FALSE, ylab = '', xlab = '')
+abline(h=0, lty = 3, col = alpha("grey", a))
+par(new = TRUE)
+plot(spline2, las=1, ylab="MDI Score", xlab= "NDVI", ylim = ylim1, xlim = xlim1)
+
+legend("topright", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
+text(0.81, 0.635, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex = 0.8)
 ```
+
+```{r Stratified }
+df <- NSES1_urban
+
+spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_lths , data = df, na.action=na.omit )
+spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet  + ct_lths , data = df, na.action=na.omit )
+
+ylim1 <- c(-1.5,1.5)
+xlim1 <- c(0,1)
+a <- 0.6
+
+par(mfrow=c(1,2))
+
+plot(NA, xlim = xlim1, ylim = ylim1, axes = FALSE, ylab = '', xlab = '')
+mtext("1st NSES Quantile, Urban Participants", side=3, line=0.4, adj=-1.3, cex=1.2)
+abline(h=0, lty = 3, col = alpha("grey", a))
+par(new = TRUE)
+plot(spline1, las=1, ylab="PSS Score", xlab= "NDVI", ylim = ylim1, xlim = xlim1)
+
+legend("topright", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
+text(0.81, 0.95, paste0("p-value: ", round(summary(spline1)$s.table[4], 3)), cex = 0.8)
+
+
+plot(NA, xlim = xlim1, ylim = ylim1, axes = FALSE, ylab = '', xlab = '')
+abline(h=0, lty = 3, col = alpha("grey", a))
+par(new = TRUE)
+plot(spline2, las=1, ylab="MDI Score", xlab= "NDVI", ylim = ylim1, xlim = xlim1)
+
+legend("topright", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
+text(0.81, 0.95, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex = 0.8)
+```
+
+```{r Stratified }
+df <- NSES3_urban
+
+spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_lths , data = df, na.action=na.omit )
+spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet  + ct_lths , data = df, na.action=na.omit )
+
+ylim1 <- c(-1.0,1.5)
+xlim1 <- c(0,1)
+a <- 0.6
+
+par(mfrow=c(1,2))
+
+plot(NA, xlim = xlim1, ylim = ylim1, axes = FALSE, ylab = '', xlab = '')
+mtext("3rd NSES Quantile, Urban Participants", side=3, line=0.4, adj=-1.3, cex=1.2)
+abline(h=0, lty = 3, col = alpha("grey", a))
+par(new = TRUE)
+plot(spline1, las=1, ylab="PSS Score", xlab= "NDVI", ylim = ylim1, xlim = xlim1)
+
+legend("topright", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
+text(0.81, 1.05, paste0("p-value: ", round(summary(spline1)$s.table[4], 3)), cex = 0.8)
+
+
+plot(NA, xlim = xlim1, ylim = ylim1, axes = FALSE, ylab = '', xlab = '')
+abline(h=0, lty = 3, col = alpha("grey", a))
+par(new = TRUE)
+plot(spline2, las=1, ylab="MDI Score", xlab= "NDVI", ylim = ylim1, xlim = xlim1)
+
+legend("topright", c("Spline", "95%CI"), lty=1:2, box.lty=1, cex=0.9)
+text(0.81, 1.05, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex = 0.8)
+```
+
+
 
