@@ -29,8 +29,7 @@ years <- 2012:2019
 buffers <- c(50,100,250,500)
 
 # select important columns
-data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden',
-                   'b_livebirths', 'b_everpregnant', 'ttp_entry', generate_all_ndvi_colnames(years,buffers))]
+data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden', 'b_livebirths', 'b_everpregnant', 'ttp_entry', 'geoflag', 'geoflag_b', generate_all_ndvi_colnames(years,buffers))]
 rm(data_full)
 
 # get NDVI - This may take a while
@@ -76,24 +75,29 @@ outcomes <- c("pss_score", "b_mdi_score")
 exposures <- names(data)[grep("ndvi", names(data))]
 
 # Initialize missing data table
-missing <- data.frame(rep(NA, 11))
+missing <- data.frame(rep(NA, 14))
 colnames(missing) <- '# of Participants w/ Missing Data'
-rownames(missing) <- c('All Exposures',
+rownames(missing) <- c('All Exposures', 'Out of Study Region', 'Cannot be accurately geocoded', 'Missing NDVI',
                        'All Outcomes', 'PSS','MDI Score',  
                        'All Confounders', 'Age', 'Race/Ethnicity', 'Education', 'Income', 'Exercise', 'Census-tract Measures')
 
 # 1. Exposures 
-ex <- data %>% dplyr::filter(complete.cases(select(., all_of(exposures))))
+geo1 <- data |> dplyr::filter(!(geoflag_b %in% c(5, 6)))
+geo2 <- geo1 |> dplyr::filter(!(geoflag_b %in% c(4, 7, 9)))
+ex <- geo2 %>% dplyr::filter(complete.cases(select(., all_of(exposures))))
 missing[1,] <- nrow(data) - nrow(ex)
+missing[2,] <- nrow(data) - nrow(geo1)
+missing[3,] <- nrow(geo1) - nrow(geo2)
+missing[4,] <- nrow(geo2) - nrow(ex)
 
 # 2. Outcomes 
 out <- ex %>% dplyr::filter(complete.cases(select(., all_of(outcomes))))
 pss <- ex %>% dplyr::filter(complete.cases(select(., "pss_score")))
 mdi <- pss %>% dplyr::filter(complete.cases(select(., "b_mdi_score")))
 
-missing[2,] <- nrow(ex) - nrow(out)
-missing[3,] <- nrow(ex) - nrow(pss)
-missing[4,] <- nrow(pss) - nrow(mdi)
+missing[5,] <- nrow(ex) - nrow(out)
+missing[6,] <- nrow(ex) - nrow(pss)
+missing[7,] <- nrow(pss) - nrow(mdi)
 
 # 3. Confounders 
 con <- out %>% dplyr::filter(complete.cases(select(., all_of(confounding))))
@@ -104,23 +108,23 @@ income <- educ %>% dplyr::filter(complete.cases(select(., "b_income")))
 exercise <- income %>% dplyr::filter(complete.cases(select(., "b_totalmet")))
 ct <- exercise %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban", "ct_lths", "ct_HHinc")))))
 
-missing[5,] <- nrow(out) - nrow(con)
-missing[6,] <- nrow(out) - nrow(age)
-missing[7,] <- nrow(age) - nrow(race)
-missing[8,] <- nrow(race) - nrow(educ)
-missing[9,] <- nrow(educ) - nrow(income)
-missing[10,] <- nrow(income) - nrow(exercise)
-missing[11,] <- nrow(exercise) - nrow(ct)
+missing[8,] <- nrow(out) - nrow(con)
+missing[9,] <- nrow(out) - nrow(age)
+missing[10,] <- nrow(age) - nrow(race)
+missing[11,] <- nrow(race) - nrow(educ)
+missing[12,] <- nrow(educ) - nrow(income)
+missing[13,] <- nrow(income) - nrow(exercise)
+missing[14,] <- nrow(exercise) - nrow(ct)
 
 # 4. Create table
 kbl(missing, caption = '') %>%
   kable_paper("striped", full_width = F) %>%
-  pack_rows("Exposures", 1, 1) %>%
-  pack_rows("Outcomes", 2, 4) %>%
-  pack_rows("Confounders", 5, 11)
+  pack_rows("Exposures", 1, 4) %>%
+  pack_rows("Outcomes", 5, 7) %>%
+  pack_rows("Confounders", 8, 14)
 
 ### Drop NAs
-data_final <- data |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures)))
+data_final <- data |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)))
 dropped <- subset(data, !(data$StudyID %in% data_final$StudyID))
 
 # checks 
@@ -149,12 +153,12 @@ dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")] <- lapp
 
 ```{r, Prep for Sensitivity Analysis}
 # attempt time 
-cycles_3 <- subset(data_final, data_final$ttp_entry < 3) |> na.omit()
-cycles_6 <- subset(data_final, data_final$ttp_entry < 6) |> na.omit()
+cycles_3 <- subset(data_final, data_final$ttp_entry < 3) |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures)))
+cycles_6 <- subset(data_final, data_final$ttp_entry < 6) |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) 
 
 # parity 
-parous <- subset(data_final, data_final$b_livebirths > 0) |> na.omit()
-nulliparous <- subset(data_final, data_final$b_livebirths == 0) |> na.omit()
+parous <- subset(data_final, data_final$b_livebirths > 0) |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures)))
+nulliparous <- subset(data_final, data_final$b_livebirths == 0) |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures)))
 
 # export 
 save(cycles_3, cycles_6, parous, nulliparous, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/sensitivity_data.RData")
