@@ -1,6 +1,25 @@
 library(dplyr)
 library(lubridate)
 
+### Assign Seasons based on baseline completion date 
+get_seasons <- function(date_vec){
+  mon <- month(date_vec)
+  seasons <- case_when(mon >= 3 & mon <= 5 ~ "spring",
+                       mon >= 6 & mon <= 8 ~ "summer",
+                       mon >= 9 & mon <= 11 ~ "fall",
+                       mon <= 2 | mon == 12 ~ "winter", 
+                       TRUE ~ NA)
+  return(seasons)
+}
+
+# get_annual_ndvi <- function(dat, date_col, years, buffers){
+#   p_year <- year(date_col)
+#   for(buffer in buffers){
+#     dat[paste0("ndvi_", buffer, "_amax")] <- paste0("max_", buffer, "m_", p_year)
+#   }
+#   
+# }
+
 
 ### Generates column names of NDVI measures 
 generate_ndvi_colnames <- function(time_measure = "seasonal", stat = "max", years = 2012:2019, buffers = c(50,100,250,500)){
