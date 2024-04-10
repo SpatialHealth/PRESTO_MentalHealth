@@ -15,9 +15,10 @@ library(lubridate)
 library(dplyr)
 library(labelled)
 library(tidyr)
-library (sas7bdat)
+library(sas7bdat)
 library(haven)
 library(kableExtra)
+library(VIM)
 # load in functions
 source("~/R/PRESTO/data_prep_functions.R")
 # path to full data set 
@@ -29,8 +30,14 @@ years <- 2012:2019
 buffers <- c(50,100,250,500)
 
 # select important columns
-data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden', 'b_livebirths', 'b_everpregnant', 'ttp_entry', 'geoflag', 'geoflag_b', generate_all_ndvi_colnames(years,buffers))]
-rm(data_full)
+data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden', 'b_livebirths', 'b_everpregnant', 'ttp_entry', 'geoflag', 'geoflag_b', #'b_smoke', 'b_beerfreq', 'b_redwinefreq', 'b_whitewinefreq', 'b_dessertwinefreq','b_liqourfreq',
+'b_unemp', 
+generate_all_ndvi_colnames(years,buffers)
+#grep(pattern = "(?:mean|max).*(?:201[2-9])", names(data_full), value = TRUE)
+)]
+#rm(data_full)
+
+data$season <- get_seasons(date_vec = data$b_finisheddate)
 
 # get NDVI - This may take a while
 data <- add_ndvi(data, id_colname = "StudyID", date_colname = "b_finisheddate", buffers=buffers)
@@ -149,6 +156,19 @@ factor_vars <- c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat", n
 data_final[factor_vars] <- lapply(data_final[factor_vars], factor)
 
 dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")] <- lapply(dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")], factor)
+```
+
+```{r Hot deck imputation}
+# impute covariates 
+imp_vars <- c("b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat")
+imputed <- hotdeck(data,
+                   variable = imp_vars,
+                   ord_var = "ageatqstn", 
+                   imp_var = FALSE) |>
+  select(all_of(c('StudyID', imp_vars))) |>
+  rename_with(~ paste0(.x, "_imp"), all_of(imp_vars))
+
+data_final <- left_join(data, imputed, by = "StudyID")
 ```
 
 ```{r, Prep for Sensitivity Analysis}
