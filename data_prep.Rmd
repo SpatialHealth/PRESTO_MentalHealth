@@ -20,7 +20,7 @@ library(haven)
 library(kableExtra)
 library(VIM)
 # load in functions
-source("~/R/PRESTO/data_prep_functions.R")
+source("~/R/PRESTO_MentalHealth/data_prep_functions.R")
 # path to full data set 
 data_full <- read_sas("ndvi_mental_002.sas7bdat")
 ```
@@ -32,8 +32,8 @@ buffers <- c(50,100,250,500)
 # select important columns
 data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden', 'b_livebirths', 'b_everpregnant', 'ttp_entry', 'geoflag', 'geoflag_b', #'b_smoke', 'b_beerfreq', 'b_redwinefreq', 'b_whitewinefreq', 'b_dessertwinefreq','b_liqourfreq',
 'b_unemp', 
-generate_all_ndvi_colnames(years,buffers)
-#grep(pattern = "(?:mean|max).*(?:201[2-9])", names(data_full), value = TRUE)
+#generate_all_ndvi_colnames(years,buffers)
+grep(pattern = "(?:mean|max).*(?:201[2-9])", names(data_full), value = TRUE)
 )]
 #rm(data_full)
 
@@ -75,9 +75,24 @@ data <- data |>
   select(!all_of(exer_names))
 ```
 
+```{r Hot deck imputation}
+# impute covariates 
+imp_vars <- c("b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat", "b_livebirths", "ttp_entry", "b_unemp")
+imputed <- hotdeck(data,
+                   variable = imp_vars,
+                   #ord_var = c("ageatqstn", "b_race_ethnic_census", "b_educ"),
+                   ord_var = "ageatqstn",
+                   domain_var = c("b_race_ethnic_census", "b_educ"),
+                   imp_var = FALSE) #|>
+#   select(all_of(c('StudyID', imp_vars))) |>
+#   rename_with(~ paste0(.x, "_imp"), all_of(imp_vars))
+# 
+# imputed <- left_join(data, imputed_covs, by = "StudyID")
+```
+
 ```{r, Check for Missingness Sequentially}
 # specify columns
-confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban")
+confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat")
 outcomes <- c("pss_score", "b_mdi_score")
 exposures <- names(data)[grep("ndvi", names(data))]
 
@@ -113,7 +128,7 @@ race <- age %>% dplyr::filter(complete.cases(select(., "b_race_ethnic_census")))
 educ <- race %>% dplyr::filter(complete.cases(select(., "b_educ")))
 income <- educ %>% dplyr::filter(complete.cases(select(., "b_income")))
 exercise <- income %>% dplyr::filter(complete.cases(select(., "b_totalmet")))
-ct <- exercise %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban", "ct_lths", "ct_HHinc")))))
+ct <- exercise %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban_cat", "ct_lths", "ct_HHinc")))))
 
 missing[8,] <- nrow(out) - nrow(con)
 missing[9,] <- nrow(out) - nrow(age)
@@ -131,54 +146,66 @@ kbl(missing, caption = '') %>%
   pack_rows("Confounders", 8, 14)
 
 ### Drop NAs
-data_final <- data |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)))
-dropped <- subset(data, !(data$StudyID %in% data_final$StudyID))
+# data_final <- data |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)))
+# dropped <- subset(data, !(data$StudyID %in% data_final$StudyID))
 
 # checks 
-if((nrow(data)-nrow(ct)) != nrow(dropped)){
-  paste0("ERROR: Some missing data is unaccounted for!")
-}
+# if((nrow(data)-nrow(ct)) != nrow(dropped)){
+#   paste0("ERROR: Some missing data is unaccounted for!")
+# }
 
 rm(ex, out, pss, mdi, con, age, race, educ, income, ct, exercise)
 ```
 
-```{r Get quantiles and assign factors}
-# GET NDVI IQR and Quartiles for raw NDVI and NDVI IQR
-data_final <- process_ndvi(data_final, 
-                           outpath = 'C:/Users/camer/OneDrive/Documents/SPH/PRESTO/breaks.csv') # saves NDVI quartile breaks
+```{r, Drop Participants with missing data}
+confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat", "season")
+outcomes <- c("pss_score", "b_mdi_score")
+exposures <- names(data)[grep("ndvi", names(data))]
 
-# Create Quantiles for NSES
-data_final <- data_final %>%
-  mutate(ct_HHinc_quantile = ntile(ct_HHinc, 3))
+imputed_final <- imputed |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)))
+imputed_dropped <- subset(imputed, !(imputed$StudyID %in% imputed_final$StudyID))
 
-# turn variables into factors 
-factor_vars <- c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat", names(data_final[grep("quantile", names(data_final))]))
-data_final[factor_vars] <- lapply(data_final[factor_vars], factor)
-
-dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")] <- lapply(dropped[c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat")], factor)
+complete_final <- data |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)))
+complete_dropped <- subset(data, !(data$StudyID %in% complete_final$StudyID))
 ```
 
-```{r Hot deck imputation}
-# impute covariates 
-imp_vars <- c("b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat")
-imputed <- hotdeck(data,
-                   variable = imp_vars,
-                   ord_var = "ageatqstn", 
-                   imp_var = FALSE) |>
-  select(all_of(c('StudyID', imp_vars))) |>
-  rename_with(~ paste0(.x, "_imp"), all_of(imp_vars))
+```{r Get quantiles and assign factors}
+### Get Quantiles
+# GET NDVI IQR and Quartiles for raw NDVI and NDVI IQR
+imputed_final <- process_ndvi(imputed_final, outpath = 'C:/Users/camer/OneDrive/Documents/SPH/PRESTO/imputed_breaks.csv') # saves NDVI quartile breaks
+# Create Quantiles for NSES
+imputed_final <- imputed_final %>% mutate(ct_HHinc_quantile = ntile(ct_HHinc, 3))
 
-data_final <- left_join(data, imputed, by = "StudyID")
+# GET NDVI IQR and Quartiles for raw NDVI and NDVI IQR
+complete_final <- process_ndvi(complete_final, outpath = 'C:/Users/camer/OneDrive/Documents/SPH/PRESTO/complete_case_breaks.csv') # saves NDVI quartile breaks
+# Create Quantiles for NSES
+complete_final <- complete_final %>% mutate(ct_HHinc_quantile = ntile(ct_HHinc, 3))
+
+
+### Convert Variables to factors 
+factor_covs <- c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat", "b_unemp", "b_everpregnant", "season")
+factor_vars <- c(factor_covs, names(imputed_final[grep("quantile", names(imputed_final))]))
+
+# Imputed 
+imputed_final[factor_vars] <- lapply(imputed_final[factor_vars], factor)
+imputed_dropped[factor_covs] <- lapply(imputed_dropped[factor_covs], factor)
+
+# Complete Cases
+complete_final[factor_vars] <- lapply(complete_final[factor_vars], factor)
+complete_dropped[factor_covs] <- lapply(complete_dropped[factor_covs], factor)
 ```
 
 ```{r, Prep for Sensitivity Analysis}
+outcomes <- c("pss_score", "b_mdi_score")
+exposures <- names(data)[grep("ndvi", names(data))]
+
 # attempt time 
-cycles_3 <- subset(data_final, data_final$ttp_entry < 3) |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures)))
-cycles_6 <- subset(data_final, data_final$ttp_entry < 6) |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) 
+cycles_3 <- subset(imputed_final, imputed_final$ttp_entry < 3) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
+cycles_6 <- subset(imputed_final, imputed_final$ttp_entry < 6) |> tidyr::drop_na(all_of(c(outcomes, exposures))) 
 
 # parity 
-parous <- subset(data_final, data_final$b_livebirths > 0) |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures)))
-nulliparous <- subset(data_final, data_final$b_livebirths == 0) |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures)))
+parous <- subset(imputed_final, imputed_final$b_livebirths > 0) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
+nulliparous <- subset(imputed_final, imputed_final$b_livebirths == 0) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
 
 # export 
 save(cycles_3, cycles_6, parous, nulliparous, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/sensitivity_data.RData")
@@ -186,29 +213,32 @@ save(cycles_3, cycles_6, parous, nulliparous, file = "C:/Users/camer/OneDrive/Do
 
 ```{r Create subsets}
 # by urbanicity 
-urban = subset(data_final, ct_urban_cat == 1)
-rural = subset(data_final, ct_urban_cat == 0)
+urban = subset(imputed_final, ct_urban_cat == 1)
+rural = subset(imputed_final, ct_urban_cat == 0)
 
 # use census tract income as a proxy for Neighborhood Socioeconomic Status
-NSES1 = subset(data_final, ct_HHinc_quantile == 1)
-NSES2 = subset(data_final, ct_HHinc_quantile == 2)
-NSES3 = subset(data_final, ct_HHinc_quantile == 3)
+NSES1 = subset(imputed_final, ct_HHinc_quantile == 1)
+NSES2 = subset(imputed_final, ct_HHinc_quantile == 2)
+NSES3 = subset(imputed_final, ct_HHinc_quantile == 3)
 
 # combined stratification
-NSES1_urban = subset(data_final, ct_HHinc_quantile == 1 & ct_urban_cat ==1)
-NSES2_urban = subset(data_final, ct_HHinc_quantile == 2 & ct_urban_cat ==1)
-NSES3_urban = subset(data_final, ct_HHinc_quantile == 3 & ct_urban_cat ==1)
-NSES1_rural = subset(data_final, ct_HHinc_quantile == 1 & ct_urban_cat ==0)
-NSES2_rural = subset(data_final, ct_HHinc_quantile == 2 & ct_urban_cat ==0)
-NSES3_rural = subset(data_final, ct_HHinc_quantile == 3 & ct_urban_cat ==0)
+NSES1_urban = subset(imputed_final, ct_HHinc_quantile == 1 & ct_urban_cat ==1)
+NSES2_urban = subset(imputed_final, ct_HHinc_quantile == 2 & ct_urban_cat ==1)
+NSES3_urban = subset(imputed_final, ct_HHinc_quantile == 3 & ct_urban_cat ==1)
+NSES1_rural = subset(imputed_final, ct_HHinc_quantile == 1 & ct_urban_cat ==0)
+NSES2_rural = subset(imputed_final, ct_HHinc_quantile == 2 & ct_urban_cat ==0)
+NSES3_rural = subset(imputed_final, ct_HHinc_quantile == 3 & ct_urban_cat ==0)
 
-data <- data_final
 ```
 
 ```{r Export data}
-save(data, urban, rural, NSES1, NSES2, NSES3, NSES1_urban, NSES2_urban, NSES3_urban, NSES1_rural, NSES2_rural, NSES3_rural, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
+imputed <- imputed_final
+complete_cases <- complete_final 
 
-save(dropped, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/dropped.RData")
+save(imputed, urban, rural, NSES1, NSES2, NSES3, NSES1_urban, NSES2_urban, NSES3_urban, NSES1_rural, NSES2_rural, NSES3_rural,
+     complete_cases, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
+
+save(imputed_dropped, complete_dropped, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/dropped.RData")
 ```
 
 
