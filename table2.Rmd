@@ -18,17 +18,20 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 
 ```{r, Run Models}
 ############# INPUTS ###########################################################
-data <- data            # Chose data (or subset of data) for this analysis 
-buffers <- c(100)       # Pick one buffer radius for this analysis
-iqr <- TRUE              # Use NDVI IQR?
+data <- imputed          # Chose data (or subset of data) for this analysis 
+imp <- TRUE              # Using imputed data? 
+buffers <- c(100)        # Pick one buffer radius for this analysis
+iqr <- FALSE             # Use NDVI IQR?
 sig_figs <- 2            # Significant digits in table output
 outpath <- "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/"
 supplementary_outpath <- "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/"
 ################################################################################
 
 # set up model runs 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
-models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
+#x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "ct_HHinc", "ct_lths")
+#models <- list(x[1:3], x[1:5], x[1:7]) #Model 1, 2, and 3
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+models <- list(x[1:3], x[1:6], x[1:8]) #Model 1, 2, and 3
 ndvi_measures <- c("amax", "smax", "smean")
 
 # PSS score 
@@ -68,11 +71,13 @@ kbl(full, caption = paste0(buffers[1],"m NDVI Buffer")) %>%
 ```
 
 ```{r, Export}
-if(iqr){
-  write.csv(full, 
-            paste0(outpath, "table2_", buffers[1], "m.csv"))
-}else{
-  write.csv(full, 
-            paste0(supplementary_outpath, "NDVInotIQR_", buffers[1], "m_table2.csv"))
-}
+# UPDATE THIS WHEN WE DECIDE WHAT WE'RE USING FOR THE MANUSCRIPT 
+
+iqr_str <- ifelse(iqr, "_iqr", "")
+imputed_str <- ifelse(imp, "", "_complete_cases")
+file_outpath <- ifelse(!iqr & imp, outpath, supplementary_outpath)
+
+write.csv(full, 
+          paste0(file_outpath, "table2", iqr_str, imputed_str, "_", buffers, "m.csv"))
+
 ```
