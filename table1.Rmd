@@ -20,6 +20,7 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/dropped.RData")
 #Table One, Full Sample ---------------------------------------------------------------------------
 
 ```{r, PREP}
+data <- imputed
 # Rename Factors
 data$race_ethnic_factors = as.factor(data$b_race_ethnic_census)
 levels(data$race_ethnic_factors) <- c("Hispanic/Latina/Latinx", "Mixed race, Non-hispanic", "Black, Non-Hispanic", "Asian/Pac Islander, Non-Hispanic", "American Indian/Alaskan Native, Non-Hispanic", "White, Non-Hispanic", "Other race, non-hispanic/missing race")
@@ -27,16 +28,26 @@ data$income_factors = as.factor(data$b_income)
 levels(data$income_factors) <- c("<$15,000", "$15,000-$24,999", "$25,000-$49,999", "$50,000-$74,999", "$75,000-$99,999", "$100,000-$124.999", "$125,000-$149,999", "$150,000-$199,999", ">=$200,000")
 data$educ_factors = as.factor(data$b_educ)
 levels(data$educ_factors) <- c("Less than 12th grade", "High school degree/GED", "Some college/vocational school", "College degree (4 years)", "Graduate degree")
+data$season_factors <- factor(data$season, levels = c("winter", "spring", "summer", "fall"),
+                                           labels = c("Winter", "Spring", "Summer", "Fall"), ordered = TRUE)
 data$parity <- data$b_livebirths > 0 
+data$smoke <- factor(data$b_smoke, levels = c(1, 2, 3), 
+                                   labels = c("Yes, at least one cigarette per day", "Yes, not every day", "No"), ordered = TRUE)
+data$alc_use <- factor(data$alccat, levels = c(1, 2, 3, 4),
+                                    labels = c("0 drinks/week", "1-6 drinks/week", "7-13 drinks/week", ">=14 drinks/week"), ordered = TRUE)
+
 
 # Rename Variable labels 
 var_label(data$ageatqstn) <- "Age"
 var_label(data$race_ethnic_factors) <- "Race/ethnicity categories-census"
 var_label(data$income_factors) <- "Income (household)"
 var_label(data$educ_factors) <- "Education"
+var_label(data$season_factors) <- "Season of study entry"
 var_label(data$b_totalmet) <- "MET hours/week"
 var_label(data$ttp_entry) <- "Cycles of Attempt Time"
 var_label(data$parity) <- "Parity"
+var_label(data$smoke) <- "Smoking"
+var_label(data$alc_use) <- "Alcohol Use"
 var_label(data$ct_HHinc) <- "Census tract - Income (household)"
 var_label(data$ct_lths) <- "Census tract - LTHS"
 var_label(data$ct_urban_cat) <- "Census tract - Urban"
@@ -44,14 +55,14 @@ var_label(data$pss_score) <- "PSS"
 var_label(data$b_mdi_score) <- "MDI" 
 
 # Assign variables for table one 
-myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "b_totalmet", "ttp_entry", "parity", "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score")
-catVars <- c( "race_ethnic_factors", "educ_factors",  "income_factors", "ct_urban_cat")
+myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "season_factors", "ttp_entry", "parity", "smoke", "alc_use", "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score")
+catVars <- c( "race_ethnic_factors", "educ_factors",  "income_factors", "season_factors","smoke", "alc_use", "ct_urban_cat")
 ```
 
 ```{r, GET TABLES}
 # Specify Quartiles
 buffer <- "100"
-ndvi_measure <- "amax"
+ndvi_measure <- "smean"
 quantiles <- paste0("ndvi_", buffer, "_", ndvi_measure, "_quantile")
 
 # Stratified by greenness quartiles 
@@ -62,6 +73,7 @@ print(tab1_100, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqua
 #Dropped Participants ---------------------------------------------------------------------------
 
 ```{r, PREP-dropt}
+dropped <- imputed_dropped
 # Rename Factors
 dropped$race_ethnic_factors = as.factor(dropped$b_race_ethnic_census)
 levels(dropped$race_ethnic_factors) <- c("Hispanic/Latina/Latinx", "Mixed race, Non-hispanic", "Black, Non-Hispanic", "Asian/Pac Islander, Non-Hispanic", "American Indian/Alaskan Native, Non-Hispanic", "White, Non-Hispanic", "Other race, non-hispanic/missing race")
@@ -69,16 +81,25 @@ dropped$income_factors = as.factor(dropped$b_income)
 levels(dropped$income_factors) <- c("<$15,000", "$15,000-$24,999", "$25,000-$49,999", "$50,000-$74,999", "$75,000-$99,999", "$100,000-$124.999", "$125,000-$149,999", "$150,000-$199,999", ">=$200,000")
 dropped$educ_factors = as.factor(dropped$b_educ)
 levels(dropped$educ_factors) <- c("Less than 12th grade", "High school degree/GED", "Some college/vocational school", "College degree (4 years)", "Graduate degree")
+dropped$season_factors <- factor(dropped$season, levels = c("winter", "spring", "summer", "fall"),
+                                           labels = c("Winter", "Spring", "Summer", "Fall"), ordered = TRUE)
 dropped$parity <- dropped$b_livebirths > 0 
+dropped$smoke <- factor(dropped$b_smoke, levels = c(1, 2, 3), 
+                                   labels = c("Yes, at least one cigarette per day", "Yes, not every day", "No"), ordered = TRUE)
+dropped$alc_use <- factor(dropped$alccat, levels = c(1, 2, 3, 4),
+                                    labels = c("0 drinks/week", "1-6 drinks/week", "7-13 drinks/week", ">=14 drinks/week"), ordered = TRUE) 
 
 # Rename Variable labels 
 var_label(dropped$ageatqstn) <- "Age"
 var_label(dropped$race_ethnic_factors) <- "Race/ethnicity categories-census"
 var_label(dropped$income_factors) <- "Income (household)"
 var_label(dropped$educ_factors) <- "Education"
+var_label(dropped$season_factors) <- "Season of study entry"
 var_label(dropped$b_totalmet) <- "MET hours/week"
 var_label(dropped$ttp_entry) <- "Cycles of Attempt Time"
 var_label(dropped$parity) <- "Parity"
+var_label(dropped$smoke) <- "Smoking"
+var_label(dropped$alc_use) <- "Alcohol Use"
 var_label(dropped$ct_HHinc) <- "Census tract - Income (household)"
 var_label(dropped$ct_lths) <- "Census tract - LTHS"
 var_label(dropped$ct_urban_cat) <- "Census tract - Urban"
@@ -89,8 +110,8 @@ var_label(dropped$ndvi_100_smax) <- "Seasonal Maximum NDVI"
 var_label(dropped$ndvi_100_smean) <- "Seasonal Mean NDVI"
 
 # Assign variables for table one 
-myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "b_totalmet", "ttp_entry", "parity",  "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score", "ndvi_100_amax", "ndvi_100_smax", "ndvi_100_smean")
-catVars <- c( "race_ethnic_factors", "educ_factors",  "income_factors", "ct_urban_cat")
+myVars <- c("ageatqstn", "race_ethnic_factors", "educ_factors", "income_factors", "season_factors", "ttp_entry", "parity", "smoke", "alc_use", "ct_HHinc", "ct_lths", "ct_urban_cat", "pss_score", "b_mdi_score", "ndvi_100_amax", "ndvi_100_smax", "ndvi_100_smean")
+catVars <- c( "race_ethnic_factors", "educ_factors",  "income_factors", "season_factors", "smoke", "alc_use", "ct_urban_cat")
 ```
 
 ```{r, GET TABLE}
@@ -105,9 +126,9 @@ print(dropt, formatOptions = list(big.mark = ","), varLabels = TRUE, dropEqual =
 ```{r}
 #export 
 table1 <- print(tab1_100, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
-write.csv(table1, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1.csv")
+write.csv(table1, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/table1.csv")
 
 dropt <- print(dropt, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE, dropEqual = TRUE)
-write.csv(dropt, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/table1_dropped.csv")
+write.csv(dropt, file="C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/table1_dropped.csv")
 ```
 
