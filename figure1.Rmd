@@ -18,7 +18,7 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 
 ```{r, Run Models}
 ############# INPUTS ###########################################################
-ndvi_measure <- "amax"  # CHANGE TO "smax" or "smean" to explore other NDVI measures
+ndvi_measure <- "smean" # CHANGE TO "smax" or "amax" to explore other NDVI measures
 outcome = "pss_score"   # CHANGE OUTCOME to "b_mdi_score" to recreate figure 2
 iqr = TRUE              # Use NDVI IQR?
 out_dir <- "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/figures/"        # Directory to save output figure
@@ -26,7 +26,7 @@ sup_dir <- "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/"  # Dire
 ################################################################################
 
 # Set up model runs 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_lths") #Model 3 (without ct_HHinc)
+x <- c("ageatqstn", "b_race_ethnic_census","season", "b_educ", "b_income", "ct_lths") #Model 3 (without ct_HHinc)
 buffers <- c(50, 100, 250, 500)
 datasets <- list(NSES1, NSES2, NSES3, NSES1_urban, NSES2_urban,NSES3_urban, NSES1_rural, NSES2_rural, NSES3_rural)
 figure1 <- as.data.frame(matrix(nrow=1, ncol=3))
@@ -78,6 +78,28 @@ ggplot(data=figure1, aes(x = buffer, y = Mean, color=quantile))+
   theme(legend.position="bottom", legend.key.width=unit(1,"in"),legend.title = element_blank(),legend.text = element_text(colour="black", size = 11))  
 ```
 
+```{r, Format for table}
+
+df <- figure1
+df$ndvi <- paste0(round(df$Mean, 2), " (", round(df$Lower_CI, 2), ", ", round(df$Upper_CI, 2), ")" ) 
+
+df <- df |> select(buffer, sample, quantile, ndvi)
+
+ndvi50 <- df[df$buffer == "50m",]
+ndvi100 <- df[df$buffer == "100m",]
+ndvi250 <- df[df$buffer == "250m",]
+ndvi500 <- df[df$buffer == "500m",]
+
+out <- left_join(ndvi50, ndvi100, by = c("sample", "quantile")) |> 
+  left_join(ndvi250, by = c("sample", "quantile")) |> 
+  left_join(ndvi500, by = c("sample", "quantile")) %>%
+  select(!grep("buffer",names(.))) |>
+  rename(ndvi50m = ndvi.x, ndvi100m = ndvi.y, ndvi250m = ndvi.x.x, ndvi500m = ndvi.y.y)
+
+out <- out[order(out$sample),]
+
+```
+
 ```{r, Export}
 if(iqr){
   out_path <- out_dir
@@ -89,4 +111,11 @@ outname <- case_when(outcome == 'pss_score' ~ 'figure1',
                      outcome == 'b_mdi_score' ~ 'figure2') %>%
   paste0(out_path, ., '.png')
 ggsave(outname, device = "png", width = 9, height = 6, units = "in", dpi = 320)
+
+
+iqr_str <- ifelse(iqr, "", "_notiqr")
+table_outname <- case_when(outcome == 'pss_score' ~ 'figure1',
+                     outcome == 'b_mdi_score' ~ 'figure2') %>%
+  paste0(sup_dir, ., iqr_str, '_table.csv')
+write.csv(out, table_outname)
 ```
