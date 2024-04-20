@@ -22,7 +22,7 @@ library(VIM)
 # load in functions
 source("~/R/PRESTO_MentalHealth/data_prep_functions.R")
 # path to full data set 
-data_full <- read_sas("ndvi_mental_002.sas7bdat")
+data_full <- read_sas("ndvi_mental_003.sas7bdat")
 ```
 
 ```{r Data Wrangling, Add NDVI}
@@ -30,8 +30,7 @@ years <- 2012:2019
 buffers <- c(50,100,250,500)
 
 # select important columns
-data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden', 'b_livebirths', 'b_everpregnant', 'ttp_entry', 'geoflag', 'geoflag_b', #'b_smoke', 'b_beerfreq', 'b_redwinefreq', 'b_whitewinefreq', 'b_dessertwinefreq','b_liqourfreq',
-'b_unemp', 
+data = data_full[c("StudyID", "Country", "state",  "ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban", "pss_score", "b_mdi_score",  "b_finisheddate", 'b_walkwork', 'b_walkexer', 'b_walktrans', 'b_bike', 'b_freeweights', 'b_jogswimraq', 'b_aerobics', 'b_garden', 'b_livebirths', 'b_everpregnant', 'ttp_entry', 'geoflag', 'geoflag_b', 'b_smoke', 'alccat', 'b_unemp', 
 #generate_all_ndvi_colnames(years,buffers)
 grep(pattern = "(?:mean|max).*(?:201[2-9])", names(data_full), value = TRUE)
 )]
@@ -72,13 +71,17 @@ data[exer_names] <- sweep(data[exer_names], MARGIN=2,scaling_factors, `*`)
 # create composite met hours variable
 data$b_totalmet <- apply(data[exer_names], sum, MARGIN = 1)
 data <- data |>
-  select(!all_of(exer_names))
+  dplyr::select(!all_of(exer_names))
 ```
 
 ```{r Hot deck imputation}
+outcomes <- c("pss_score", "b_mdi_score")
+exposures <- names(data)[grep("ndvi", names(data))]
+data_to_impute <- data |> tidyr::drop_na(all_of(c(outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)) & state != "AK" & state != "HI")
+  
 # impute covariates 
-imp_vars <- c("b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat", "b_livebirths", "ttp_entry", "b_unemp")
-imputed <- hotdeck(data,
+imp_vars <- c("b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat", "b_livebirths", "ttp_entry", "b_smoke", "alccat")
+imputed <- hotdeck(data_to_impute,
                    variable = imp_vars,
                    #ord_var = c("ageatqstn", "b_race_ethnic_census", "b_educ"),
                    ord_var = "ageatqstn",
@@ -92,7 +95,7 @@ imputed <- hotdeck(data,
 
 ```{r, Check for Missingness Sequentially}
 # specify columns
-confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat")
+confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "season", "ct_HHinc", "ct_lths", "ct_urban_cat")
 outcomes <- c("pss_score", "b_mdi_score")
 exposures <- names(data)[grep("ndvi", names(data))]
 
@@ -101,10 +104,10 @@ missing <- data.frame(rep(NA, 14))
 colnames(missing) <- '# of Participants w/ Missing Data'
 rownames(missing) <- c('All Exposures', 'Out of Study Region', 'Cannot be accurately geocoded', 'Missing NDVI',
                        'All Outcomes', 'PSS','MDI Score',  
-                       'All Confounders', 'Age', 'Race/Ethnicity', 'Education', 'Income', 'Exercise', 'Census-tract Measures')
+                       'All Confounders', 'Age', 'Race/Ethnicity', 'Education', 'Income', 'Season', 'Census-tract Measures')
 
 # 1. Exposures 
-geo1 <- data |> dplyr::filter(!(geoflag_b %in% c(5, 6)))
+geo1 <- data |> dplyr::filter(!(geoflag_b %in% c(5, 6)) & state != "AK" & state != "HI") 
 geo2 <- geo1 |> dplyr::filter(!(geoflag_b %in% c(4, 7, 9)))
 ex <- geo2 %>% dplyr::filter(complete.cases(select(., all_of(exposures))))
 missing[1,] <- nrow(data) - nrow(ex)
@@ -127,16 +130,16 @@ age <- out %>% dplyr::filter(complete.cases(select(., "ageatqstn")))
 race <- age %>% dplyr::filter(complete.cases(select(., "b_race_ethnic_census")))
 educ <- race %>% dplyr::filter(complete.cases(select(., "b_educ")))
 income <- educ %>% dplyr::filter(complete.cases(select(., "b_income")))
-exercise <- income %>% dplyr::filter(complete.cases(select(., "b_totalmet")))
-ct <- exercise %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban_cat", "ct_lths", "ct_HHinc")))))
+season <- income %>% dplyr::filter(complete.cases(select(., "season")))
+ct <- season %>% dplyr::filter(complete.cases(select(., all_of(c("ct_urban_cat", "ct_lths", "ct_HHinc")))))
 
 missing[8,] <- nrow(out) - nrow(con)
 missing[9,] <- nrow(out) - nrow(age)
 missing[10,] <- nrow(age) - nrow(race)
 missing[11,] <- nrow(race) - nrow(educ)
 missing[12,] <- nrow(educ) - nrow(income)
-missing[13,] <- nrow(income) - nrow(exercise)
-missing[14,] <- nrow(exercise) - nrow(ct)
+missing[13,] <- nrow(income) - nrow(season)
+missing[14,] <- nrow(season) - nrow(ct)
 
 # 4. Create table
 kbl(missing, caption = '') %>%
@@ -154,18 +157,19 @@ kbl(missing, caption = '') %>%
 #   paste0("ERROR: Some missing data is unaccounted for!")
 # }
 
-rm(ex, out, pss, mdi, con, age, race, educ, income, ct, exercise)
+rm(ex, out, pss, mdi, con, age, race, educ, income, ct, season)
+write.csv(missing, "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/missing_data.csv")
 ```
 
-```{r, Drop Participants with missing data}
-confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths", "ct_urban_cat", "season")
+```{r, Drop Participants with missing data OR in AK/HI}
+confounding <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths", "ct_urban_cat", "season")
 outcomes <- c("pss_score", "b_mdi_score")
 exposures <- names(data)[grep("ndvi", names(data))]
 
-imputed_final <- imputed |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)))
-imputed_dropped <- subset(imputed, !(imputed$StudyID %in% imputed_final$StudyID))
+imputed_final <- imputed |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)) & state != "AK" & state != "HI")
+imputed_dropped <- subset(data, !(data$StudyID %in% imputed_final$StudyID))
 
-complete_final <- data |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)))
+complete_final <- data |> tidyr::drop_na(all_of(c(confounding, outcomes, exposures))) |> dplyr::filter(!(geoflag_b %in% c(4,5,6,7,9)) & state != "AK" & state != "HI")
 complete_dropped <- subset(data, !(data$StudyID %in% complete_final$StudyID))
 ```
 
@@ -183,7 +187,7 @@ complete_final <- complete_final %>% mutate(ct_HHinc_quantile = ntile(ct_HHinc, 
 
 
 ### Convert Variables to factors 
-factor_covs <- c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat", "b_unemp", "b_everpregnant", "season")
+factor_covs <- c("b_race_ethnic_census", "b_educ", "b_income", "ct_urban_cat", "b_unemp", "b_everpregnant", "season", "b_smoke", "alccat")
 factor_vars <- c(factor_covs, names(imputed_final[grep("quantile", names(imputed_final))]))
 
 # Imputed 
@@ -207,8 +211,21 @@ cycles_6 <- subset(imputed_final, imputed_final$ttp_entry < 6) |> tidyr::drop_na
 parous <- subset(imputed_final, imputed_final$b_livebirths > 0) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
 nulliparous <- subset(imputed_final, imputed_final$b_livebirths == 0) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
 
+# smoking 
+smoking <- subset(imputed_final, as.numeric(imputed_final$b_smoke) < 3 ) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
+nonsmoking <- subset(imputed_final, as.numeric(imputed_final$b_smoke) == 3 ) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
+
+# alcohol use
+alc_none <- subset(imputed_final, as.numeric(imputed_final$alccat) < 2) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
+alc_any <- subset(imputed_final, as.numeric(imputed_final$alccat) >= 2) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
+
+alc_lessthan_f3 <- subset(imputed_final, as.numeric(imputed_final$alccat) < 3) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
+alc_f3_or_more <- subset(imputed_final, as.numeric(imputed_final$alccat) >= 3) |> tidyr::drop_na(all_of(c(outcomes, exposures)))
+
 # export 
-save(cycles_3, cycles_6, parous, nulliparous, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/sensitivity_data.RData")
+save(cycles_3, cycles_6, parous, nulliparous, smoking, nonsmoking, 
+     alc_none, alc_any, alc_lessthan_f3, alc_f3_or_more, 
+     file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/sensitivity_data.RData")
 ```
 
 ```{r Create subsets}
