@@ -11,15 +11,41 @@ library(tidyverse)
 library(lubridate)
 library(dplyr)
 library(corrplot)
+library(mediation)
 
 #load in data
 load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/dropped.RData")
 ```
 
+```{r, Mediation Analysis}
+data <- imputed
+med_fit <- lm(b_totalmet ~ ndvi_100_smax_iqr + ageatqstn + b_race_ethnic_census + b_educ + b_income + ct_HHinc + ct_lths , data = data)
+pss_fit <- lm(pss_score ~ ndvi_100_smax_iqr + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_HHinc + ct_lths , data = data)
+
+med_out_pss <- mediate(med_fit, pss_fit, 
+                   treat = "ndvi_100_smax_iqr", 
+                   mediator = "b_totalmet", 
+                   sims = 100, 
+                   treat.value = quantile(data$ndvi_100_smax_iqr, 0.75),
+                   control.value = quantile(data$ndvi_100_smax_iqr, 0.25))
+summary(med_out_pss)
+plot(med_out_pss)
+
+mdi_fit <- lm(b_mdi_score ~ ndvi_100_smax_iqr + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_HHinc + ct_lths , data = data)
+med_out_mdi <- mediate(med_fit, mdi_fit, 
+                   treat = "ndvi_100_smax_iqr", 
+                   mediator = "b_totalmet", 
+                   sims = 100, 
+                   treat.value = quantile(data$ndvi_100_smax_iqr, 0.75),
+                   control.value = quantile(data$ndvi_100_smax_iqr, 0.25))
+summary(med_out_mdi)
+plot(med_out_mdi)
+```
+
 ```{r, DEMOGRAPHIC}
 # States and Provinces
-all <- sort(unique(data$state))
+all <- sort(unique(imputed$state))
 provinces <- c('AB', 'BC', 'MB', 'NB', 'NL', 'NT', 'NS', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT')
 
 CAD <- provinces[provinces %in% all]
@@ -30,20 +56,20 @@ USA <- all[!(all %in% provinces)]
 USA #All states + DC, except for AK and HI
 length(USA)
 
-counts <- data |> select(Country, state) |> count(state, Country)
+counts <- imputed |> dplyr::select(Country, state) |> count(state, Country)
 write.csv(counts, "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/map_counts.csv")
 
 ### Income 
 #% of participants with income >$50,000
-(sum(as.numeric(data$b_income) >= 4) / nrow(data)) * 100
+(sum(as.numeric(imputed$b_income) >= 4) / nrow(imputed)) * 100
 
 #% w/ income >$50,000 for dropped participants
-(sum(as.numeric(dropped$b_income) >= 4, na.rm = TRUE) / length(na.omit(dropped$b_income))) * 100
+(sum(as.numeric(imputed$b_income) >= 4, na.rm = TRUE) / length(na.omit(imputed_dropped$b_income))) * 100
 ```
 
 ```{r, NDVI CORRELATIONS}
 # Get NDVI columns
-all_n <- dplyr::select(data, matches('ndvi', ignore.case = 'quantile')) |>
+all_n <- dplyr::select(imputed, matches('ndvi', ignore.case = 'quantile')) |>
     dplyr::select(!matches('quantile'))
 n <- dplyr::select(all_n, !matches('iqr'))
 iqr <- dplyr::select(all_n, matches('iqr'))
@@ -59,30 +85,82 @@ m <- round(cor(dat, method = "spearman"), 2)
 write.csv(m,"C:/Users/camer/OneDrive/Documents/SPH/PRESTO/supplementary/NDVIcorrelations.csv" )
 ```
 
+```{r NDVI exposures}
+library(ggplot2)
+library(ggridges)
+
+
+tmp_dat <- matrix(c(imputed$ndvi_100_amax, imputed$ndvi_100_smax, imputed$ndvi_100_smean), ncol = 1) |> as.data.frame()
+tmp_dat$name <- c(rep("Annual Max", 9718), rep("Seasonal Max", 9718), rep("Seasonal Mean", 9718))
+
+ggplot(tmp_dat, aes(x = V1, y = name, fill = name, alpha = 0.8)) + 
+  geom_density_ridges(rel_min_height = 0.001, scale = 1.5) + 
+  coord_cartesian(clip = "off") +
+  theme_ridges() + 
+  theme(legend.position = "none")
+
+tmp_dat <- matrix(c(imputed$ndvi_100_smean, urban$ndvi_100_smean, rural$ndvi_100_smean), ncol = 1) |> as.data.frame()
+tmp_dat$name <- c(rep("Full Sample", 9718), rep("Urban", 7012), rep("Rural", 2706))
+
+ggplot(tmp_dat, aes(x = V1, y = name, fill = name, alpha = 0.8)) + 
+  geom_density_ridges(rel_min_height = 0.001, scale = 1.5) + 
+  coord_cartesian(clip = "off") +
+  theme_ridges() + 
+  theme(legend.position = "none")
+
+
+d1 <- density(imputed$ndvi_100_amax)
+d2 <- density(imputed$ndvi_100_smax)
+d3 <- density(imputed$ndvi_100_smean)
+plot(d1, col = 2, lwd = 2, main = "NDVI distributions - Full Sample")
+lines(d2, col = 3, lwd = 2)
+lines(d3, col = 4, lwd = 2)
+legend("topleft", legend = c("Annual Max", "Seasonal Max", "Seasonal Mean"), col = c(2, 3, 4), lwd = 2, lty = 1)
+
+d1 <- density(imputed$ndvi_100_smean)
+d2 <- density(urban$ndvi_100_smean)
+d3 <- density(rural$ndvi_100_smean)
+plot(d1, col = 2, lwd = 2, main = "NDVI distributions - Seasonal Mean")
+lines(d2, col = 3, lwd = 2)
+lines(d3, col = 4, lwd = 2)
+legend("topleft", legend = c("Full Sample", "Urban", "Rural"), col = c(2, 3, 4), lwd = 2, lty = 1)
+
+mean(urban$ndvi_100_smean)
+sd(urban$ndvi_100_smean)
+
+mean(rural$ndvi_100_smean)
+sd(rural$ndvi_100_smean)
+
+
+```
+
 ```{r}
-# Estimates and CI for select models 
+# Estimates and CI for select models
+
+### FILTER TO ONLY MODELS INCLUDED IN THE MANUSCRIPT
+
 source("analysis_functions.R")
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "ct_HHinc", "ct_lths")
 
 # Full sample - PSS model 1 
-ma <- lmfull_processed(data = data, y = 'pss_score', buffers = 100, x = x[1:2], ndvi_measure = 'amax', sig_figs = 2)
+ma <- lmfull_processed(data = imputed, y = 'pss_score', buffers = 100, x = x[1:3], ndvi_measure = 'smean', sig_figs = 2)
 ma
 
-mb <- lmfull_processed(data = data, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2)
+mb <- lmfull_processed(data = imputed, y = 'pss_score', buffers = 100, x = x[1:3], ndvi_measure = 'smean', sig_figs = 2)
 mb
 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_lths") 
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "ct_lths") 
 
 # NSES1 - urban
-m1 <- lmfull_processed(data = NSES1_urban, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m1 <- lmfull_processed(data = NSES1_urban, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'smean', sig_figs = 2 )
 m1
 
 # NSES2 - urban 
-m2 <- lmfull_processed(data = NSES2_urban, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m2 <- lmfull_processed(data = NSES2_urban, y = 'pss_score', buffers = 100, x = x, ndvi_measure = 'smean', sig_figs = 2 )
 m2
 
 # NSES3 - rural
-m3 <- lmfull_processed(data = NSES3_rural, y = 'pss_score', buffers = 500, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m3 <- lmfull_processed(data = NSES3_rural, y = 'pss_score', buffers = 500, x = x, ndvi_measure = 'smean', sig_figs = 2 )
 m3
 
 ```
@@ -90,25 +168,25 @@ m3
 ```{r}
 ### REPEAT w/ MDI 
 # Full sample - model 1 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "ct_HHinc", "ct_lths")
 
-ma <- lmfull_processed(data = data, y = 'b_mdi_score', buffers = 100, x = x[1:2], ndvi_measure = 'amax', sig_figs = 2)
+ma <- lmfull_processed(data = imputed, y = 'b_mdi_score', buffers = 100, x = x[1:3], ndvi_measure = 'smean', sig_figs = 2)
 ma
 
-mb <- lmfull_processed(data = data, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2)
+mb <- lmfull_processed(data = imputed, y = 'b_mdi_score', buffers = 100, x = x[1:3], ndvi_measure = 'smean', sig_figs = 2)
 mb
 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income",  "b_totalmet", "ct_lths") 
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "ct_lths") 
 
 # NSES1 - urban
-m1 <- lmfull_processed(data = NSES1_urban, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m1 <- lmfull_processed(data = NSES1_urban, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'smean', sig_figs = 2 )
 m1
 
 # NSES2 - urban 
-m2 <- lmfull_processed(data = NSES2_urban, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m2 <- lmfull_processed(data = NSES2_urban, y = 'b_mdi_score', buffers = 100, x = x, ndvi_measure = 'smean', sig_figs = 2 )
 m2
 
 # NSES3 - rural
-m3 <- lmfull_processed(data = NSES3_rural, y = 'b_mdi_score', buffers = 500, x = x, ndvi_measure = 'amax', sig_figs = 2 )
+m3 <- lmfull_processed(data = NSES3_rural, y = 'b_mdi_score', buffers = 500, x = x, ndvi_measure = 'smean', sig_figs = 2 )
 m3
 ```
