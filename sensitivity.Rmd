@@ -20,8 +20,8 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/sensitivity_data.RData")
 # Attempt Time at Study Entry 
 ```{r, Attempt Time: PSS}
 #set up model runs 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
-models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "ct_HHinc", "ct_lths")
+models <- list(x[1:3], x[1:5], x[1:7]) #Model 1, 2, and 3
 buffers <- c(100)                      #pick one buffer radius for this analysis
 ndvi_measures <- c("amax", "smax", "smean")
 outcome <- "pss_score"
@@ -61,8 +61,8 @@ kbl(pss_cycles, caption = paste0(buffers[1],"m NDVI Buffer - PSS")) %>%
 
 ```{r, Attempt Time: MDI}
 #set up model runs 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
-models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "ct_HHinc", "ct_lths")
+models <- list(x[1:3], x[1:5], x[1:7]) #Model 1, 2, and 3
 buffers <- c(100)                      #pick one buffer radius for this analysis
 ndvi_measures <- c("amax", "smax", "smean")
 outcome <- "b_mdi_score"
@@ -103,8 +103,8 @@ kbl(mdi_cycles, caption = paste0(buffers[1],"m NDVI Buffer - MDI")) %>%
 # Parity 
 ```{r, Parity: PSS}
 #set up model runs 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
-models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "ct_HHinc", "ct_lths")
+models <- list(x[1:3], x[1:5], x[1:7]) #Model 1, 2, and 3
 buffers <- c(100)                      #pick one buffer radius for this analysis
 ndvi_measures <- c("amax", "smax", "smean")
 outcome <- "pss_score"
@@ -144,8 +144,8 @@ kbl(pss_parity, caption = paste0(buffers[1],"m NDVI Buffer - PSS")) %>%
 
 ```{r, Parity: MDI}
 #set up model runs 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
-models <- list(x[1:2], x[1:5], x[1:7]) #Model 1, 2, and 3
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "ct_HHinc", "ct_lths")
+models <- list(x[1:3], x[1:5], x[1:7]) #Model 1, 2, and 3
 buffers <- c(100)                      #pick one buffer radius for this analysis
 ndvi_measures <- c("amax", "smax", "smean")
 outcome <- "b_mdi_score"
@@ -183,18 +183,114 @@ kbl(mdi_parity, caption = paste0(buffers[1],"m NDVI Buffer - MDI")) %>%
   pack_rows("Nulliparous", 4, 6) 
 ```
 
-# Exercise 
-```{r, Excluding Exercise}
+# Smoking 
+```{r, Including Smoking}
 ############# INPUTS ###########################################################
-data <- data            # Chose data (or subset of data) for this analysis 
+data <- imputed         # Chose data (or subset of data) for this analysis 
 buffers <- c(100)       # Pick one buffer radius for this analysis
 iqr = TRUE              # Use NDVI IQR?
 sig_figs = 2            # Significant digits in table output
 ################################################################################
 
 # set up model runs 
-x <- c("ageatqstn", "b_race_ethnic_census", "b_educ", "b_income", "ct_HHinc", "ct_lths")
-models <- list(x[1:2], x[1:4], x[1:6]) #Model 1, 2, and 3
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "b_smoke", "ct_HHinc", "ct_lths")
+models <- list(x[1:3], x[1:6], x[1:8]) #Model 1, 2, and 3
+ndvi_measures <- c("amax", "smax", "smean")
+
+# PSS score 
+outcome <- "pss_score"
+smoke_pss <- data.frame()
+    #loop through models 
+for(i in 1:length(models)){
+    #loop through NDVI measures 
+  for(j in 1:length(ndvi_measures)){
+    smoke_pss[i,j] <- lmfull_processed(data = data, y = outcome, buffers = buffers, x = models[[i]], ndvi_measure = ndvi_measures[j], 
+                                 sig_figs = sig_figs, iqr = iqr)
+  }
+}
+colnames(smoke_pss) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(smoke_pss) <- c("PSS - Model 1", "PSS - Model 2", "PSS - Model 3")
+
+#MDI score
+outcome <- "b_mdi_score"
+smoke_mdi <- data.frame(ncol = length(ndvi_measures), nrow = (length(models)))
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    smoke_mdi[i,j] <- lmfull_processed(data = data, y = outcome, buffers = buffers, x = models[[i]], ndvi_measure=ndvi_measures[j], 
+                                 sig_figs = sig_figs, iqr = iqr)
+  }
+}
+colnames(smoke_mdi) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(smoke_mdi) <- c("MDI - Model 1", "MDI - Model 2", "MDI - Model 3")
+
+smoke_full <- rbind(smoke_pss, smoke_mdi)
+
+kbl(smoke_full, caption = paste0(buffers[1],"m NDVI Buffer")) %>%
+  kable_paper("striped", full_width = F) %>%
+  pack_rows("PSS", 1, 3) %>%
+  pack_rows("MDI", 4, 6) 
+```
+
+# Alcohol 
+```{r, Including Alcohol Use}
+############# INPUTS ###########################################################
+data <- imputed         # Chose data (or subset of data) for this analysis 
+buffers <- c(100)       # Pick one buffer radius for this analysis
+iqr = TRUE              # Use NDVI IQR?
+sig_figs = 2            # Significant digits in table output
+################################################################################
+
+# set up model runs 
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "alccat", "ct_HHinc", "ct_lths")
+models <- list(x[1:3], x[1:6], x[1:8]) #Model 1, 2, and 3
+ndvi_measures <- c("amax", "smax", "smean")
+
+# PSS score 
+outcome <- "pss_score"
+alc_pss <- data.frame()
+    #loop through models 
+for(i in 1:length(models)){
+    #loop through NDVI measures 
+  for(j in 1:length(ndvi_measures)){
+    alc_pss[i,j] <- lmfull_processed(data = data, y = outcome, buffers = buffers, x = models[[i]], ndvi_measure = ndvi_measures[j], 
+                                 sig_figs = sig_figs, iqr = iqr)
+  }
+}
+colnames(alc_pss) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(alc_pss) <- c("PSS - Model 1", "PSS - Model 2", "PSS - Model 3")
+
+#MDI score
+outcome <- "b_mdi_score"
+alc_mdi <- data.frame(ncol = length(ndvi_measures), nrow = (length(models)))
+for(i in 1:length(models)){
+  for(j in 1:length(ndvi_measures)){
+    alc_mdi[i,j] <- lmfull_processed(data = data, y = outcome, buffers = buffers, x = models[[i]], ndvi_measure=ndvi_measures[j], 
+                                 sig_figs = sig_figs, iqr = iqr)
+  }
+}
+colnames(alc_mdi) <- c("Annual Max", "Seasonal Max", "Seasonal Mean")
+rownames(alc_mdi) <- c("MDI - Model 1", "MDI - Model 2", "MDI - Model 3")
+
+alc_full <- rbind(alc_pss, alc_mdi)
+
+kbl(alc_full, caption = paste0(buffers[1],"m NDVI Buffer")) %>%
+  kable_paper("striped", full_width = F) %>%
+  pack_rows("PSS", 1, 3) %>%
+  pack_rows("MDI", 4, 6) 
+```
+
+# Exercise 
+```{r, Including Exercise}
+############# INPUTS ###########################################################
+data <- imputed            # Chose data (or subset of data) for this analysis 
+buffers <- c(100)       # Pick one buffer radius for this analysis
+iqr = TRUE              # Use NDVI IQR?
+sig_figs = 2            # Significant digits in table output
+################################################################################
+
+# set up model runs 
+x <- c("ageatqstn", "b_race_ethnic_census", "season", "b_educ", "b_income", "b_totalmet", "ct_HHinc", "ct_lths")
+models <- list(x[1:3], x[1:6], x[1:8]) #Model 1, 2, and 3
 ndvi_measures <- c("amax", "smax", "smean")
 
 # PSS score 
@@ -238,6 +334,8 @@ sens_mdi_table2 <- rbind(mdi_cycles, mdi_parity)
 
 write.csv(sens_pss_table2, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/sens_pss_table2.csv")
 write.csv(sens_mdi_table2, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/sens_mdi_table2.csv")
-write.csv(full, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/noexercise_table2.csv")
+write.csv(full, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/exercise_table2.csv")
+write.csv(smoke_full, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/smoking_table2.csv")
+write.csv(alc_full, file = "C:/Users/camer/OneDrive/Documents/SPH/PRESTO/sensitivity/alcohol_table2.csv")
 
 ```
