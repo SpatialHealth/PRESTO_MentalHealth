@@ -20,10 +20,10 @@ load("C:/Users/camer/OneDrive/Documents/SPH/PRESTO/data/data_processed.RData")
 
 
 ```{r Create Figure for Supplement}
-df <- data
+df <- imputed
 
-spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_HHinc + ct_lths , data = df, na.action=na.omit )
-spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_HHinc + ct_lths , data = df, na.action=na.omit )
+spline1 <- gam(pss_score~ s(ndvi_100_smean, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + season + ct_HHinc + ct_lths , data = df, na.action=na.omit )
+spline2 <- gam(b_mdi_score~ s(ndvi_100_smean, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + season + ct_HHinc + ct_lths , data = df, na.action=na.omit )
 
 ylim1 <- c(-1,1)
 xlim1 <- c(0,1)
@@ -55,10 +55,10 @@ dev.off()
 ```
 
 ```{r Full sample spline for viz }
-df <- data
+df <- imputed
 
-spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_HHinc + ct_lths , data = df, na.action=na.omit )
-spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_HHinc + ct_lths , data = df, na.action=na.omit )
+spline1 <- gam(pss_score~ s(ndvi_100_smean, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + season + ct_HHinc + ct_lths , data = df, na.action=na.omit )
+spline2 <- gam(b_mdi_score~ s(ndvi_100_smean, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + season + ct_HHinc + ct_lths , data = df, na.action=na.omit )
 
 ylim1 <- c(-1,1)
 xlim1 <- c(0,1)
@@ -88,8 +88,8 @@ text(0.81, 0.635, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), ce
 ```{r Stratified }
 df <- NSES1_urban
 
-spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_lths , data = df, na.action=na.omit )
-spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet  + ct_lths , data = df, na.action=na.omit )
+spline1 <- gam(pss_score~ s(ndvi_100_smean, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + season + ct_lths , data = df, na.action=na.omit )
+spline2 <- gam(b_mdi_score~ s(ndvi_100_smean, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + season + ct_lths , data = df, na.action=na.omit )
 
 ylim1 <- c(-1.5,1.5)
 xlim1 <- c(0,1)
@@ -119,8 +119,8 @@ text(0.81, 0.95, paste0("p-value: ", round(summary(spline2)$s.table[4], 3)), cex
 ```{r Stratified }
 df <- NSES3_urban
 
-spline1 <- gam(pss_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet + ct_lths , data = df, na.action=na.omit )
-spline2 <- gam(b_mdi_score~ s(ndvi_100_amax, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + b_totalmet  + ct_lths , data = df, na.action=na.omit )
+spline1 <- gam(pss_score~ s(ndvi_100_smean, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + season + ct_lths , data = df, na.action=na.omit )
+spline2 <- gam(b_mdi_score~ s(ndvi_100_smean, fx=TRUE, k=3) + ageatqstn + b_race_ethnic_census + b_educ + b_income + season  + ct_lths , data = df, na.action=na.omit )
 
 ylim1 <- c(-1.0,1.5)
 xlim1 <- c(0,1)
