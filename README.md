@@ -1,4 +1,4 @@
-## Residential Proximity to Green Space and Mental Health in a Preconception Cohort
+## Exposure to Residential Greenness, Perceived Stress, and Depressive Symptoms in a North American Preconception Cohort
 **Author: Cameron J. Reimer**
 
 This repo contains all code used for the analysis in this paper currently under review. We examined associations between residential greenness exposure and perceived stress and depression in a cross-sectional analysis of pregnancy planners in the Pregnancy Study Online (PRESTO) cohort.
